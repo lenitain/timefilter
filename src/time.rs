@@ -533,4 +533,99 @@ mod tests {
         assert_eq!(TimeFilter::le(now).op, TimeOp::Le);
         assert_eq!(TimeFilter::eq(now).op, TimeOp::Eq);
     }
+
+    // -- cross-crate extraction risks --
+
+    #[test]
+    fn negative_relative_time() {
+        // "-1h" means 1 hour in the FUTURE (now - (-1h) = now + 1h)
+        let now = Utc::now();
+        let parsed = parse_time("-1h").unwrap();
+        let diff = parsed - now;
+        assert!(diff.num_minutes() >= 59 && diff.num_minutes() <= 61);
+    }
+
+    #[test]
+    fn filter_empty_after_operator() {
+        assert_eq!(parse_time_filter(">="), Err(TimeError::EmptyInput));
+        assert_eq!(parse_time_filter("<"), Err(TimeError::EmptyInput));
+        assert_eq!(parse_time_filter(">"), Err(TimeError::EmptyInput));
+        assert_eq!(parse_time_filter("<="), Err(TimeError::EmptyInput));
+    }
+
+    #[test]
+    fn leap_year_parses() {
+        let dt = parse_time("2024-02-29").unwrap();
+        assert_eq!(dt.month(), 2);
+        assert_eq!(dt.day(), 29);
+    }
+
+    #[test]
+    fn invalid_leap_year_fails() {
+        // 2023 is not a leap year, Feb 29 should fail
+        assert_eq!(parse_time("2023-02-29"), Err(TimeError::InvalidDate));
+    }
+
+    #[test]
+    fn edge_day_month_boundaries() {
+        // Month boundaries: Jan 31 → Feb 1 should not be valid
+        assert_eq!(parse_time("2024-01-32"), Err(TimeError::InvalidDate));
+        assert_eq!(parse_time("2024-13-01"), Err(TimeError::InvalidDate));
+        // Apr 31 doesn't exist
+        assert_eq!(parse_time("2024-04-31"), Err(TimeError::InvalidDate));
+    }
+
+    #[test]
+    fn time_error_is_proper_error() {
+        use std::error::Error;
+        assert!(TimeError::EmptyInput.source().is_none());
+        assert_eq!(TimeError::EmptyInput.to_string(), "empty input");
+        assert_eq!(TimeError::InvalidDate.to_string(), "failed to parse date/time");
+        assert_eq!(TimeError::UnknownSuffix.to_string(), "unknown time suffix (expected h, hr, m, min, d, s)");
+        assert_eq!(TimeError::InvalidNumber.to_string(), "failed to parse number");
+        assert!(TimeError::MissingOperator.to_string().contains("time filter must start"));
+    }
+
+    #[test]
+    fn time_op_display_all() {
+        assert_eq!(TimeOp::Gt.to_string(), ">");
+        assert_eq!(TimeOp::Ge.to_string(), ">=");
+        assert_eq!(TimeOp::Lt.to_string(), "<");
+        assert_eq!(TimeOp::Le.to_string(), "<=");
+        assert_eq!(TimeOp::Eq.to_string(), "=");
+    }
+
+    #[test]
+    fn time_filter_roundtrip_absolute() {
+        // format_datetime uses local timezone, so full roundtrip depends on TZ.
+        // Just verify the string format has operator + date.
+        let dt: DateTime<Utc> = parse_time("2024-06-15 08:30").unwrap();
+        let f = TimeFilter::ge(dt);
+        let s = f.to_string();
+        assert!(s.starts_with(">="), "starts with >=: {}", s);
+        assert!(s.contains("2024-06-15"), "contains date: {}", s);
+        assert!(s.contains(":"), "contains time: {}", s);
+    }
+
+    #[test]
+    fn time_serde_compile_check() {
+        // Compile-time: TimeFilter + TimeOp implement Send + Sync
+        fn assert_send<T: Send>() {}
+        fn assert_sync<T: Sync>() {}
+        assert_send::<TimeFilter>();
+        assert_sync::<TimeFilter>();
+        assert_send::<TimeOp>();
+        assert_sync::<TimeOp>();
+    }
+
+    #[test]
+    fn format_datetime_various_times() {
+        // Just verify output is non-empty and contains the date
+        let dt: DateTime<Utc> = parse_time("2024-01-01").unwrap();
+        let s = format_datetime(&dt);
+        assert!(s.contains("2024"), "contains year: {}", s);
+        assert!(s.contains("01"), "contains month/day: {}", s);
+        assert!(s.contains(":"), "contains time separator: {}", s);
+    }
 }
+

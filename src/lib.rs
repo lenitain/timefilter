@@ -64,6 +64,58 @@
 //! let f = TimeFilter::lt(now);
 //! ```
 //!
+//! # TimeFilter convenience constructors
+//!
+//! ```
+//! use timefilter::TimeFilter;
+//! use chrono::Utc;
+//!
+//! let now = Utc::now();
+//! let f = TimeFilter::gt(now);   // value > now
+//! let f = TimeFilter::ge(now);   // value >= now
+//! let f = TimeFilter::lt(now);   // value < now
+//! let f = TimeFilter::le(now);   // value <= now
+//! let f = TimeFilter::eq(now);   // value == now
+//! ```
+//!
+//! # Using `TimeFilter::matches`
+//!
+//! ```
+//! use timefilter::{parse_time, TimeFilter};
+//!
+//! let start = parse_time("2024-06-01").unwrap();
+//! let end   = parse_time("2024-06-30").unwrap();
+//! let mid   = parse_time("2024-06-15").unwrap();
+//!
+//! let f = TimeFilter::ge(start);
+//! assert!(f.matches(mid));
+//! assert!(f.matches(end));
+//! assert!(!f.matches(parse_time("2024-05-31").unwrap()));
+//! ```
+//!
+//! # Using `TimeOp::applies`
+//!
+//! ```
+//! use timefilter::{TimeOp, parse_time};
+//!
+//! let t1 = parse_time("2024-06-15").unwrap();
+//! let t2 = parse_time("2024-05-01").unwrap();
+//!
+//! assert!(TimeOp::Gt.applies(t1, t2));
+//! assert!(!TimeOp::Lt.applies(t1, t2));
+//! assert!(TimeOp::Eq.applies(t1, t1));
+//! ```
+//!
+//! # Error handling
+//!
+//! ```
+//! use timefilter::{parse_time, parse_time_filter, TimeError};
+//!
+//! assert_eq!(parse_time(""), Err(TimeError::EmptyInput));
+//! assert_eq!(parse_time("abc"), Err(TimeError::InvalidDate));
+//! assert_eq!(parse_time_filter("1h"), Err(TimeError::MissingOperator));
+//! ```
+//!
 //! # Serde support
 //!
 //! With the `serde` feature enabled, [`TimeFilter`] can be serialized and
