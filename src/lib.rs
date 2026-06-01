@@ -134,6 +134,6 @@ pub use time::*;
 
 /// Easy import of the crate's most common items.
 pub mod prelude {
-    pub use super::{TimeFilter, TimeOp, TimeError, TimeResult};
-    pub use super::{parse_time, parse_time_filter, format_datetime};
+    pub use super::{TimeError, TimeFilter, TimeOp, TimeResult};
+    pub use super::{format_datetime, parse_time, parse_time_filter};
 }

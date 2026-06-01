@@ -79,27 +79,52 @@ impl TimeFilter {
     /// Filter: `value > threshold`.
     #[inline]
     #[must_use]
-    pub fn gt(time: DateTime<Utc>) -> Self { TimeFilter { op: TimeOp::Gt, time } }
+    pub fn gt(time: DateTime<Utc>) -> Self {
+        TimeFilter {
+            op: TimeOp::Gt,
+            time,
+        }
+    }
 
     /// Filter: `value >= threshold`.
     #[inline]
     #[must_use]
-    pub fn ge(time: DateTime<Utc>) -> Self { TimeFilter { op: TimeOp::Ge, time } }
+    pub fn ge(time: DateTime<Utc>) -> Self {
+        TimeFilter {
+            op: TimeOp::Ge,
+            time,
+        }
+    }
 
     /// Filter: `value < threshold`.
     #[inline]
     #[must_use]
-    pub fn lt(time: DateTime<Utc>) -> Self { TimeFilter { op: TimeOp::Lt, time } }
+    pub fn lt(time: DateTime<Utc>) -> Self {
+        TimeFilter {
+            op: TimeOp::Lt,
+            time,
+        }
+    }
 
     /// Filter: `value <= threshold`.
     #[inline]
     #[must_use]
-    pub fn le(time: DateTime<Utc>) -> Self { TimeFilter { op: TimeOp::Le, time } }
+    pub fn le(time: DateTime<Utc>) -> Self {
+        TimeFilter {
+            op: TimeOp::Le,
+            time,
+        }
+    }
 
     /// Filter: `value == threshold`.
     #[inline]
     #[must_use]
-    pub fn eq(time: DateTime<Utc>) -> Self { TimeFilter { op: TimeOp::Eq, time } }
+    pub fn eq(time: DateTime<Utc>) -> Self {
+        TimeFilter {
+            op: TimeOp::Eq,
+            time,
+        }
+    }
 
     /// Check whether `value` passes this filter.
     #[inline]
@@ -252,19 +277,31 @@ fn try_parse_relative(s: &str) -> Option<DateTime<Utc>> {
     let duration = match () {
         _ if suf.eq_ignore_ascii_case("d")
             || suf.eq_ignore_ascii_case("day")
-            || suf.eq_ignore_ascii_case("days") => Duration::days(num),
+            || suf.eq_ignore_ascii_case("days") =>
+        {
+            Duration::days(num)
+        }
         _ if suf.eq_ignore_ascii_case("h")
             || suf.eq_ignore_ascii_case("hr")
             || suf.eq_ignore_ascii_case("hour")
-            || suf.eq_ignore_ascii_case("hours") => Duration::hours(num),
+            || suf.eq_ignore_ascii_case("hours") =>
+        {
+            Duration::hours(num)
+        }
         _ if suf.eq_ignore_ascii_case("m")
             || suf.eq_ignore_ascii_case("min")
             || suf.eq_ignore_ascii_case("minute")
-            || suf.eq_ignore_ascii_case("minutes") => Duration::minutes(num),
+            || suf.eq_ignore_ascii_case("minutes") =>
+        {
+            Duration::minutes(num)
+        }
         _ if suf.eq_ignore_ascii_case("s")
             || suf.eq_ignore_ascii_case("sec")
             || suf.eq_ignore_ascii_case("second")
-            || suf.eq_ignore_ascii_case("seconds") => Duration::seconds(num),
+            || suf.eq_ignore_ascii_case("seconds") =>
+        {
+            Duration::seconds(num)
+        }
         _ => return None,
     };
     Some(Utc::now() - duration)
@@ -470,7 +507,10 @@ mod tests {
     fn filter_no_operator_errors() {
         assert_eq!(parse_time_filter("1h"), Err(TimeError::MissingOperator));
         assert_eq!(parse_time_filter("30d"), Err(TimeError::MissingOperator));
-        assert_eq!(parse_time_filter("2026-05-01"), Err(TimeError::MissingOperator));
+        assert_eq!(
+            parse_time_filter("2026-05-01"),
+            Err(TimeError::MissingOperator)
+        );
     }
 
     #[test]
@@ -580,10 +620,23 @@ mod tests {
         use std::error::Error;
         assert!(TimeError::EmptyInput.source().is_none());
         assert_eq!(TimeError::EmptyInput.to_string(), "empty input");
-        assert_eq!(TimeError::InvalidDate.to_string(), "failed to parse date/time");
-        assert_eq!(TimeError::UnknownSuffix.to_string(), "unknown time suffix (expected h, hr, m, min, d, s)");
-        assert_eq!(TimeError::InvalidNumber.to_string(), "failed to parse number");
-        assert!(TimeError::MissingOperator.to_string().contains("time filter must start"));
+        assert_eq!(
+            TimeError::InvalidDate.to_string(),
+            "failed to parse date/time"
+        );
+        assert_eq!(
+            TimeError::UnknownSuffix.to_string(),
+            "unknown time suffix (expected h, hr, m, min, d, s)"
+        );
+        assert_eq!(
+            TimeError::InvalidNumber.to_string(),
+            "failed to parse number"
+        );
+        assert!(
+            TimeError::MissingOperator
+                .to_string()
+                .contains("time filter must start")
+        );
     }
 
     #[test]
@@ -628,4 +681,3 @@ mod tests {
         assert!(s.contains(":"), "contains time separator: {}", s);
     }
 }
-
