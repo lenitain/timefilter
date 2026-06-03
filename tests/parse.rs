@@ -1,5 +1,5 @@
 use timefilter::prelude::*;
-use chrono::{DateTime, Duration, Utc, Datelike, Timelike};
+use chrono::{Duration, Utc, Datelike, Timelike};
 
 // -- relative time --
 
