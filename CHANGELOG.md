@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+## [0.1.1] - 2026-06-04
 
 - GitHub Actions CI workflow (build + test + fmt + clippy)
 - Additional doc-tests covering edge cases in time parsing and filtering.
