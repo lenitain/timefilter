@@ -10,7 +10,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - GitHub Actions CI workflow (build + test + fmt + clippy)
-
 - Additional doc-tests covering edge cases in time parsing and filtering.
 
 ## [0.1.0] - 2026-05-13
