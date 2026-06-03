@@ -1,5 +1,5 @@
+use chrono::{DateTime, Datelike, TimeZone, Timelike, Utc};
 use timefilter::prelude::*;
-use chrono::{DateTime, Utc, TimeZone, Datelike, Timelike};
 
 // -- TimeFilter type --
 

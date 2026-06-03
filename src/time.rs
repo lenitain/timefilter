@@ -343,4 +343,3 @@ pub fn format_datetime(dt: &DateTime<Utc>) -> String {
         .format("%Y-%m-%d %H:%M:%S")
         .to_string()
 }
-

@@ -1,5 +1,5 @@
+use chrono::{DateTime, TimeZone, Utc};
 use timefilter::prelude::*;
-use chrono::{DateTime, Utc, TimeZone};
 
 // -- TimeOp --
 
