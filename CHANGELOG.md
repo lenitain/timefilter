@@ -19,8 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- GitHub Actions CI workflow (build + test + fmt + clippy)
-
 - Initial release of `timefilter`.
 - `parse_time`: parse relative time strings (`"1h"`, `"30m"`, `"7d"`, `"2hr"`, `"15min"`, `"30s"`)
   and absolute datetime strings (`"2024-05-01 10:00"`, `"2024-12-25 15:30:45"`, `"2024-01-15"`).
