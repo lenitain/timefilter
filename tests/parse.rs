@@ -1,5 +1,5 @@
 use chrono::{Datelike, Duration, Timelike, Utc};
-use timefilter::prelude::*;
+use timefilter::{parse_duration, prelude::*};
 
 // -- relative time --
 
@@ -138,4 +138,56 @@ fn invalid() {
 #[test]
 fn unknown_suffix() {
     assert_eq!(parse_time("1x"), Err(TimeError::InvalidDate));
+}
+
+// -- parse_duration --
+
+#[test]
+fn parse_duration_days() {
+    assert_eq!(parse_duration("7d").unwrap(), Duration::days(7));
+    assert_eq!(parse_duration("1 day").unwrap(), Duration::days(1));
+    assert_eq!(parse_duration("3 days").unwrap(), Duration::days(3));
+}
+
+#[test]
+fn parse_duration_hours() {
+    assert_eq!(parse_duration("2h").unwrap(), Duration::hours(2));
+    assert_eq!(parse_duration("1hr").unwrap(), Duration::hours(1));
+    assert_eq!(parse_duration("24 hours").unwrap(), Duration::hours(24));
+}
+
+#[test]
+fn parse_duration_minutes() {
+    assert_eq!(parse_duration("30m").unwrap(), Duration::minutes(30));
+    assert_eq!(parse_duration("15min").unwrap(), Duration::minutes(15));
+    assert_eq!(parse_duration("1 minute").unwrap(), Duration::minutes(1));
+}
+
+#[test]
+fn parse_duration_seconds() {
+    assert_eq!(parse_duration("30s").unwrap(), Duration::seconds(30));
+    assert_eq!(parse_duration("1sec").unwrap(), Duration::seconds(1));
+    assert_eq!(parse_duration("45 seconds").unwrap(), Duration::seconds(45));
+}
+
+#[test]
+fn parse_duration_iso8601() {
+    assert_eq!(parse_duration("P7D").unwrap(), Duration::days(7));
+    assert_eq!(parse_duration("p7d").unwrap(), Duration::days(7));
+    assert_eq!(parse_duration("PT2H").unwrap(), Duration::hours(2));
+    assert_eq!(parse_duration("PT30M").unwrap(), Duration::minutes(30));
+    assert_eq!(parse_duration("PT45S").unwrap(), Duration::seconds(45));
+    assert_eq!(parse_duration("P1DT12H").unwrap(), Duration::days(1) + Duration::hours(12));
+    assert_eq!(parse_duration("P1DT2H30M").unwrap(), Duration::days(1) + Duration::hours(2) + Duration::minutes(30));
+    assert_eq!(parse_duration("PT1H30M45S").unwrap(), Duration::hours(1) + Duration::minutes(30) + Duration::seconds(45));
+}
+
+#[test]
+fn parse_duration_errors() {
+    assert_eq!(parse_duration("").unwrap_err(), TimeError::EmptyInput);
+    assert_eq!(parse_duration("  ").unwrap_err(), TimeError::EmptyInput);
+    assert_eq!(parse_duration("abc").unwrap_err(), TimeError::UnknownSuffix);
+    assert_eq!(parse_duration("1x").unwrap_err(), TimeError::UnknownSuffix);
+    assert_eq!(parse_duration("P").unwrap_err(), TimeError::InvalidNumber);
+    assert_eq!(parse_duration("PT").unwrap_err(), TimeError::InvalidNumber);
 }

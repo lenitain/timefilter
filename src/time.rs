@@ -268,43 +268,153 @@ pub fn parse_time(time_str: &str) -> TimeResult<DateTime<Utc>> {
 }
 
 fn try_parse_relative(s: &str) -> Option<DateTime<Utc>> {
+    let duration = parse_duration_inner(s)?;
+    Some(Utc::now() - duration)
+}
+
+/// Parse human-readable duration string to `Duration`.
+///
+/// Supports relative formats:
+/// - `"7d"`, `"7 days"` — days
+/// - `"2h"`, `"2hr"` — hours
+/// - `"30m"`, `"30min"` — minutes
+/// - `"30s"` — seconds
+///
+/// Also supports ISO 8601 duration format:
+/// - `"P7D"` — 7 days
+/// - `"PT2H"` — 2 hours
+/// - `"P1DT12H"` — 1 day and 12 hours
+///
+/// # Errors
+///
+/// Returns [`TimeError::EmptyInput`], [`TimeError::UnknownSuffix`],
+/// or [`TimeError::InvalidNumber`].
+pub fn parse_duration(s: &str) -> TimeResult<Duration> {
+    let s = s.trim();
+    if s.is_empty() {
+        return Err(TimeError::EmptyInput);
+    }
+    
+    // Try ISO 8601 duration format first
+    if s.starts_with('P') || s.starts_with('p') {
+        return parse_iso8601_duration(s);
+    }
+    
+    // Try human-readable format
+    parse_duration_inner(s).ok_or(TimeError::UnknownSuffix)
+}
+
+fn parse_duration_inner(s: &str) -> Option<Duration> {
     // We need to split digits from suffix. Find where alphabetic part starts.
     let alpha_pos = s.find(|c: char| c.is_ascii_alphabetic())?;
     let (num_str, suffix) = s.split_at(alpha_pos);
     let num: i64 = num_str.trim().parse().ok()?;
 
     let suf = suffix.trim();
-    let duration = match () {
+    match () {
         _ if suf.eq_ignore_ascii_case("d")
             || suf.eq_ignore_ascii_case("day")
             || suf.eq_ignore_ascii_case("days") =>
         {
-            Duration::days(num)
+            Some(Duration::days(num))
         }
         _ if suf.eq_ignore_ascii_case("h")
             || suf.eq_ignore_ascii_case("hr")
             || suf.eq_ignore_ascii_case("hour")
             || suf.eq_ignore_ascii_case("hours") =>
         {
-            Duration::hours(num)
+            Some(Duration::hours(num))
         }
         _ if suf.eq_ignore_ascii_case("m")
             || suf.eq_ignore_ascii_case("min")
             || suf.eq_ignore_ascii_case("minute")
             || suf.eq_ignore_ascii_case("minutes") =>
         {
-            Duration::minutes(num)
+            Some(Duration::minutes(num))
         }
         _ if suf.eq_ignore_ascii_case("s")
             || suf.eq_ignore_ascii_case("sec")
             || suf.eq_ignore_ascii_case("second")
             || suf.eq_ignore_ascii_case("seconds") =>
         {
-            Duration::seconds(num)
+            Some(Duration::seconds(num))
         }
-        _ => return None,
-    };
-    Some(Utc::now() - duration)
+        _ => None,
+    }
+}
+
+fn parse_iso8601_duration(s: &str) -> TimeResult<Duration> {
+    let s = s.to_uppercase();
+    let s = s.trim_start_matches('P');
+    
+    if s.is_empty() {
+        return Err(TimeError::InvalidNumber);
+    }
+    
+    let mut total_seconds = 0i64;
+    let mut current_num = String::new();
+    let mut in_time = false;
+    
+    for c in s.chars() {
+        match c {
+            'T' => {
+                in_time = true;
+                if !current_num.is_empty() {
+                    return Err(TimeError::InvalidNumber);
+                }
+            }
+            '0'..='9' => {
+                current_num.push(c);
+            }
+            'D' => {
+                if current_num.is_empty() {
+                    return Err(TimeError::InvalidNumber);
+                }
+                let days: i64 = current_num.parse().map_err(|_| TimeError::InvalidNumber)?;
+                total_seconds += days * 86400;
+                current_num.clear();
+            }
+            'H' => {
+                if current_num.is_empty() || !in_time {
+                    return Err(TimeError::InvalidNumber);
+                }
+                let hours: i64 = current_num.parse().map_err(|_| TimeError::InvalidNumber)?;
+                total_seconds += hours * 3600;
+                current_num.clear();
+            }
+            'M' => {
+                if current_num.is_empty() || !in_time {
+                    return Err(TimeError::InvalidNumber);
+                }
+                let minutes: i64 = current_num.parse().map_err(|_| TimeError::InvalidNumber)?;
+                total_seconds += minutes * 60;
+                current_num.clear();
+            }
+            'S' => {
+                if current_num.is_empty() || !in_time {
+                    return Err(TimeError::InvalidNumber);
+                }
+                let seconds: i64 = current_num.parse().map_err(|_| TimeError::InvalidNumber)?;
+                total_seconds += seconds;
+                current_num.clear();
+            }
+            _ => {
+                return Err(TimeError::UnknownSuffix);
+            }
+        }
+    }
+    
+    // If there's remaining unparsed number, it's an error
+    if !current_num.is_empty() {
+        return Err(TimeError::InvalidNumber);
+    }
+    
+    // Must have parsed at least some duration
+    if total_seconds == 0 {
+        return Err(TimeError::InvalidNumber);
+    }
+    
+    Ok(Duration::seconds(total_seconds))
 }
 
 fn try_parse_absolute(s: &str) -> TimeResult<DateTime<Utc>> {

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- `parse_duration`: parse time strings to `Duration` without subtracting from current time.
+  Supports human-readable formats (`"7d"`, `"2h"`, `"30m"`, `"30s"`) and ISO 8601 duration format (`"P7D"`, `"PT2H"`, `"P1DT12H"`).
+
 ## [0.1.1] - 2026-06-04
 
 - GitHub Actions CI workflow (build + test + fmt + clippy)

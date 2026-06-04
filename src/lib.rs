@@ -40,6 +40,20 @@
 //! let dt = parse_time("30s").unwrap();   // 30 seconds ago
 //! ```
 //!
+//! # Parse duration only
+//!
+//! `parse_duration` parses time strings to `Duration` without subtracting from current time:
+//!
+//! ```
+//! use timefilter::parse_duration;
+//! use chrono::Duration;
+//!
+//! let dur = parse_duration("7d").unwrap();    // Duration::days(7)
+//! let dur = parse_duration("2h").unwrap();    // Duration::hours(2)
+//! let dur = parse_duration("P7D").unwrap();   // ISO 8601: 7 days
+//! let dur = parse_duration("PT2H").unwrap();  // ISO 8601: 2 hours
+//! ```
+//!
 //! # Absolute time
 //!
 //! ```
@@ -135,5 +149,5 @@ pub use time::*;
 /// Easy import of the crate's most common items.
 pub mod prelude {
     pub use super::{TimeError, TimeFilter, TimeOp, TimeResult};
-    pub use super::{format_datetime, parse_time, parse_time_filter};
+    pub use super::{format_datetime, parse_duration, parse_time, parse_time_filter};
 }
