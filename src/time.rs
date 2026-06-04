@@ -284,6 +284,7 @@ fn try_parse_relative(s: &str) -> Option<DateTime<Utc>> {
 /// - `"P7D"` — 7 days
 /// - `"PT2H"` — 2 hours
 /// - `"P1DT12H"` — 1 day and 12 hours
+///
 /// Parse human-readable duration string to `Duration`.
 ///
 /// Supports relative formats:
