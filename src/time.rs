@@ -294,12 +294,12 @@ pub fn parse_duration(s: &str) -> TimeResult<Duration> {
     if s.is_empty() {
         return Err(TimeError::EmptyInput);
     }
-    
+
     // Try ISO 8601 duration format first
     if s.starts_with('P') || s.starts_with('p') {
         return parse_iso8601_duration(s);
     }
-    
+
     // Try human-readable format
     parse_duration_inner(s).ok_or(TimeError::UnknownSuffix)
 }
@@ -346,15 +346,15 @@ fn parse_duration_inner(s: &str) -> Option<Duration> {
 fn parse_iso8601_duration(s: &str) -> TimeResult<Duration> {
     let s = s.to_uppercase();
     let s = s.trim_start_matches('P');
-    
+
     if s.is_empty() {
         return Err(TimeError::InvalidNumber);
     }
-    
+
     let mut total_seconds = 0i64;
     let mut current_num = String::new();
     let mut in_time = false;
-    
+
     for c in s.chars() {
         match c {
             'T' => {
@@ -403,17 +403,17 @@ fn parse_iso8601_duration(s: &str) -> TimeResult<Duration> {
             }
         }
     }
-    
+
     // If there's remaining unparsed number, it's an error
     if !current_num.is_empty() {
         return Err(TimeError::InvalidNumber);
     }
-    
+
     // Must have parsed at least some duration
     if total_seconds == 0 {
         return Err(TimeError::InvalidNumber);
     }
-    
+
     Ok(Duration::seconds(total_seconds))
 }
 

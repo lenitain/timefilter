@@ -177,9 +177,18 @@ fn parse_duration_iso8601() {
     assert_eq!(parse_duration("PT2H").unwrap(), Duration::hours(2));
     assert_eq!(parse_duration("PT30M").unwrap(), Duration::minutes(30));
     assert_eq!(parse_duration("PT45S").unwrap(), Duration::seconds(45));
-    assert_eq!(parse_duration("P1DT12H").unwrap(), Duration::days(1) + Duration::hours(12));
-    assert_eq!(parse_duration("P1DT2H30M").unwrap(), Duration::days(1) + Duration::hours(2) + Duration::minutes(30));
-    assert_eq!(parse_duration("PT1H30M45S").unwrap(), Duration::hours(1) + Duration::minutes(30) + Duration::seconds(45));
+    assert_eq!(
+        parse_duration("P1DT12H").unwrap(),
+        Duration::days(1) + Duration::hours(12)
+    );
+    assert_eq!(
+        parse_duration("P1DT2H30M").unwrap(),
+        Duration::days(1) + Duration::hours(2) + Duration::minutes(30)
+    );
+    assert_eq!(
+        parse_duration("PT1H30M45S").unwrap(),
+        Duration::hours(1) + Duration::minutes(30) + Duration::seconds(45)
+    );
 }
 
 #[test]
