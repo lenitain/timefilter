@@ -284,6 +284,38 @@ fn try_parse_relative(s: &str) -> Option<DateTime<Utc>> {
 /// - `"P7D"` — 7 days
 /// - `"PT2H"` — 2 hours
 /// - `"P1DT12H"` — 1 day and 12 hours
+/// Parse human-readable duration string to `Duration`.
+///
+/// Supports relative formats:
+/// - `"7d"`, `"7 days"` — days
+/// - `"2h"`, `"2hr"` — hours
+/// - `"30m"`, `"30min"` — minutes
+/// - `"30s"` — seconds
+///
+/// Also supports ISO 8601 duration format:
+/// - `"P7D"` — 7 days
+/// - `"PT2H"` — 2 hours
+/// - `"P1DT12H"` — 1 day and 12 hours
+///
+/// ```
+/// use timefilter::parse_duration;
+/// use chrono::Duration;
+///
+/// // Human-readable formats
+/// assert_eq!(parse_duration("7d").unwrap(), Duration::days(7));
+/// assert_eq!(parse_duration("2h").unwrap(), Duration::hours(2));
+/// assert_eq!(parse_duration("30m").unwrap(), Duration::minutes(30));
+/// assert_eq!(parse_duration("30s").unwrap(), Duration::seconds(30));
+///
+/// // Verbose suffixes
+/// assert_eq!(parse_duration("1 day").unwrap(), Duration::days(1));
+/// assert_eq!(parse_duration("2 hours").unwrap(), Duration::hours(2));
+///
+/// // ISO 8601 duration format
+/// assert_eq!(parse_duration("P7D").unwrap(), Duration::days(7));
+/// assert_eq!(parse_duration("PT2H").unwrap(), Duration::hours(2));
+/// assert_eq!(parse_duration("P1DT12H").unwrap(), Duration::days(1) + Duration::hours(12));
+/// ```
 ///
 /// # Errors
 ///
