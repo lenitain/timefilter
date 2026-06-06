@@ -2,6 +2,8 @@
 
 [![Crates.io](https://img.shields.io/crates/v/timefilter.svg)](https://crates.io/crates/timefilter)
 [![Docs.rs](https://docs.rs/timefilter/badge.svg)](https://docs.rs/timefilter)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/lenitain/timefilter/actions/workflows/ci.yml/badge.svg)](https://github.com/lenitain/timefilter/actions/workflows/ci.yml)
 
 Human-readable time string parsing and **filtering with comparison operators** — `">=7d"`, `"<2h"`, `"2024-05-01"`.
 
