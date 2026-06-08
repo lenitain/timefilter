@@ -79,7 +79,7 @@ impl TimeFilter {
     /// Filter: `value > threshold`.
     #[inline]
     #[must_use]
-    pub fn gt(time: DateTime<Utc>) -> Self {
+    pub const fn gt(time: DateTime<Utc>) -> Self {
         TimeFilter {
             op: TimeOp::Gt,
             time,
@@ -89,7 +89,7 @@ impl TimeFilter {
     /// Filter: `value >= threshold`.
     #[inline]
     #[must_use]
-    pub fn ge(time: DateTime<Utc>) -> Self {
+    pub const fn ge(time: DateTime<Utc>) -> Self {
         TimeFilter {
             op: TimeOp::Ge,
             time,
@@ -99,7 +99,7 @@ impl TimeFilter {
     /// Filter: `value < threshold`.
     #[inline]
     #[must_use]
-    pub fn lt(time: DateTime<Utc>) -> Self {
+    pub const fn lt(time: DateTime<Utc>) -> Self {
         TimeFilter {
             op: TimeOp::Lt,
             time,
@@ -109,7 +109,7 @@ impl TimeFilter {
     /// Filter: `value <= threshold`.
     #[inline]
     #[must_use]
-    pub fn le(time: DateTime<Utc>) -> Self {
+    pub const fn le(time: DateTime<Utc>) -> Self {
         TimeFilter {
             op: TimeOp::Le,
             time,
@@ -119,7 +119,7 @@ impl TimeFilter {
     /// Filter: `value == threshold`.
     #[inline]
     #[must_use]
-    pub fn eq(time: DateTime<Utc>) -> Self {
+    pub const fn eq(time: DateTime<Utc>) -> Self {
         TimeFilter {
             op: TimeOp::Eq,
             time,
