@@ -225,7 +225,6 @@ pub fn parse_time_filter(s: &str) -> TimeResult<TimeFilter> {
         ("<", TimeOp::Lt),
         ("=", TimeOp::Eq),
     ];
-
     let (op, rest) = prefixes
         .iter()
         .find_map(|&(prefix, op)| s.strip_prefix(prefix).map(|r| (op, r)))
