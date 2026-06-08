@@ -36,10 +36,7 @@ fn error_display() {
         TimeError::InvalidDate.to_string(),
         "failed to parse date/time"
     );
-    assert_eq!(
-        TimeError::UnknownSuffix.to_string(),
-        "unknown time suffix"
-    );
+    assert_eq!(TimeError::UnknownSuffix.to_string(), "unknown time suffix");
     assert_eq!(
         TimeError::InvalidNumber.to_string(),
         "failed to parse number"
