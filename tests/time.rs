@@ -38,7 +38,7 @@ fn error_display() {
     );
     assert_eq!(
         TimeError::UnknownSuffix.to_string(),
-        "unknown time suffix (expected h, hr, m, min, d, s)"
+        "unknown time suffix"
     );
     assert_eq!(
         TimeError::InvalidNumber.to_string(),
