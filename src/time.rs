@@ -218,19 +218,18 @@ pub type TimeResult<T> = Result<T, TimeError>;
 /// or [`TimeError`] variants from time parsing.
 pub fn parse_time_filter(s: &str) -> TimeResult<TimeFilter> {
     let s = s.trim();
-    let (op, rest) = if let Some(r) = s.strip_prefix(">=") {
-        (TimeOp::Ge, r)
-    } else if let Some(r) = s.strip_prefix("<=") {
-        (TimeOp::Le, r)
-    } else if let Some(r) = s.strip_prefix('>') {
-        (TimeOp::Gt, r)
-    } else if let Some(r) = s.strip_prefix('<') {
-        (TimeOp::Lt, r)
-    } else if let Some(r) = s.strip_prefix('=') {
-        (TimeOp::Eq, r)
-    } else {
-        return Err(TimeError::MissingOperator);
-    };
+    let prefixes: &[(&str, TimeOp)] = &[
+        (">=", TimeOp::Ge),
+        ("<=", TimeOp::Le),
+        (">", TimeOp::Gt),
+        ("<", TimeOp::Lt),
+        ("=", TimeOp::Eq),
+    ];
+
+    let (op, rest) = prefixes
+        .iter()
+        .find_map(|&(prefix, op)| s.strip_prefix(prefix).map(|r| (op, r)))
+        .ok_or(TimeError::MissingOperator)?;
     let time = parse_time(rest)?;
     Ok(TimeFilter { op, time })
 }
