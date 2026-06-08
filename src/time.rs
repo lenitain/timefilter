@@ -194,7 +194,7 @@ impl fmt::Display for TimeError {
                 "time filter must start with an operator (>=, >, <=, <, =)"
             }
             TimeError::EmptyInput => "empty input",
-            TimeError::UnknownSuffix => "unknown time suffix (expected h, hr, m, min, d, s)",
+            TimeError::UnknownSuffix => "unknown time suffix (expected d/day, h/hr, m/min, s/sec, or ISO 8601 like P7D/PT2H)",
             TimeError::InvalidNumber => "failed to parse number",
             TimeError::InvalidDate => "failed to parse date/time",
         })
