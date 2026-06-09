@@ -28,7 +28,7 @@ cargo add timefilter
 cargo test
 ```
 
-42 tests covering parsing, filtering, edge cases, and formatting.
+53 tests covering parsing, filtering, edge cases, and formatting.
 
 ## Quick example
 
