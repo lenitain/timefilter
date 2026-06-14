@@ -358,59 +358,71 @@ fn parse_duration_inner(s: &str) -> Option<Duration> {
 }
 
 fn parse_iso8601_duration(s: &str) -> TimeResult<Duration> {
-    let s = s.to_uppercase();
-    let s = s.trim_start_matches('P');
+    // Trim leading 'P' (case-insensitive) without allocating
+    let s = if s.as_bytes().first() == Some(&b'P') || s.as_bytes().first() == Some(&b'p') {
+        &s[1..]
+    } else {
+        return Err(TimeError::UnknownSuffix);
+    };
 
     if s.is_empty() {
         return Err(TimeError::InvalidNumber);
     }
 
     let mut total_seconds = 0i64;
-    let mut current_num = String::new();
+    let mut num_start: Option<usize> = None;
     let mut in_time = false;
+    let bytes = s.as_bytes();
 
-    for c in s.chars() {
-        match c {
-            'T' => {
+    for (i, &b) in bytes.iter().enumerate() {
+        match b {
+            b'T' | b't' => {
                 in_time = true;
-                if !current_num.is_empty() {
+                if num_start.is_some() {
                     return Err(TimeError::InvalidNumber);
                 }
             }
-            '0'..='9' => {
-                current_num.push(c);
-            }
-            'D' => {
-                if current_num.is_empty() {
-                    return Err(TimeError::InvalidNumber);
+            b'0'..=b'9' => {
+                if num_start.is_none() {
+                    num_start = Some(i);
                 }
-                let days: i64 = current_num.parse().map_err(|_| TimeError::InvalidNumber)?;
+            }
+            b'D' | b'd' => {
+                let Some(start) = num_start.take() else {
+                    return Err(TimeError::InvalidNumber);
+                };
+                let days: i64 = s[start..i].parse().map_err(|_| TimeError::InvalidNumber)?;
                 total_seconds += days * 86400;
-                current_num.clear();
             }
-            'H' => {
-                if current_num.is_empty() || !in_time {
+            b'H' | b'h' => {
+                let Some(start) = num_start.take() else {
+                    return Err(TimeError::InvalidNumber);
+                };
+                if !in_time {
                     return Err(TimeError::InvalidNumber);
                 }
-                let hours: i64 = current_num.parse().map_err(|_| TimeError::InvalidNumber)?;
+                let hours: i64 = s[start..i].parse().map_err(|_| TimeError::InvalidNumber)?;
                 total_seconds += hours * 3600;
-                current_num.clear();
             }
-            'M' => {
-                if current_num.is_empty() || !in_time {
+            b'M' | b'm' => {
+                let Some(start) = num_start.take() else {
+                    return Err(TimeError::InvalidNumber);
+                };
+                if !in_time {
                     return Err(TimeError::InvalidNumber);
                 }
-                let minutes: i64 = current_num.parse().map_err(|_| TimeError::InvalidNumber)?;
+                let minutes: i64 = s[start..i].parse().map_err(|_| TimeError::InvalidNumber)?;
                 total_seconds += minutes * 60;
-                current_num.clear();
             }
-            'S' => {
-                if current_num.is_empty() || !in_time {
+            b'S' | b's' => {
+                let Some(start) = num_start.take() else {
+                    return Err(TimeError::InvalidNumber);
+                };
+                if !in_time {
                     return Err(TimeError::InvalidNumber);
                 }
-                let seconds: i64 = current_num.parse().map_err(|_| TimeError::InvalidNumber)?;
+                let seconds: i64 = s[start..i].parse().map_err(|_| TimeError::InvalidNumber)?;
                 total_seconds += seconds;
-                current_num.clear();
             }
             _ => {
                 return Err(TimeError::UnknownSuffix);
@@ -419,7 +431,7 @@ fn parse_iso8601_duration(s: &str) -> TimeResult<Duration> {
     }
 
     // If there's remaining unparsed number, it's an error
-    if !current_num.is_empty() {
+    if num_start.is_some() {
         return Err(TimeError::InvalidNumber);
     }
 
