@@ -283,19 +283,6 @@ fn try_parse_relative(s: &str) -> Option<DateTime<Utc>> {
 /// - `"PT2H"` — 2 hours
 /// - `"P1DT12H"` — 1 day and 12 hours
 ///
-/// Parse human-readable duration string to `Duration`.
-///
-/// Supports relative formats:
-/// - `"7d"`, `"7 days"` — days
-/// - `"2h"`, `"2hr"` — hours
-/// - `"30m"`, `"30min"` — minutes
-/// - `"30s"` — seconds
-///
-/// Also supports ISO 8601 duration format:
-/// - `"P7D"` — 7 days
-/// - `"PT2H"` — 2 hours
-/// - `"P1DT12H"` — 1 day and 12 hours
-///
 /// ```
 /// use timefilter::parse_duration;
 /// use chrono::Duration;
@@ -342,35 +329,31 @@ fn parse_duration_inner(s: &str) -> Option<Duration> {
     let num: i64 = num_str.trim().parse().ok()?;
 
     let suf = suffix.trim();
-    match () {
-        () if suf.eq_ignore_ascii_case("d")
-            || suf.eq_ignore_ascii_case("day")
-            || suf.eq_ignore_ascii_case("days") =>
-        {
-            Some(Duration::days(num))
-        }
-        () if suf.eq_ignore_ascii_case("h")
-            || suf.eq_ignore_ascii_case("hr")
-            || suf.eq_ignore_ascii_case("hour")
-            || suf.eq_ignore_ascii_case("hours") =>
-        {
-            Some(Duration::hours(num))
-        }
-        () if suf.eq_ignore_ascii_case("m")
-            || suf.eq_ignore_ascii_case("min")
-            || suf.eq_ignore_ascii_case("minute")
-            || suf.eq_ignore_ascii_case("minutes") =>
-        {
-            Some(Duration::minutes(num))
-        }
-        () if suf.eq_ignore_ascii_case("s")
-            || suf.eq_ignore_ascii_case("sec")
-            || suf.eq_ignore_ascii_case("second")
-            || suf.eq_ignore_ascii_case("seconds") =>
-        {
-            Some(Duration::seconds(num))
-        }
-        () => None,
+    if suf.eq_ignore_ascii_case("d")
+        || suf.eq_ignore_ascii_case("day")
+        || suf.eq_ignore_ascii_case("days")
+    {
+        Some(Duration::days(num))
+    } else if suf.eq_ignore_ascii_case("h")
+        || suf.eq_ignore_ascii_case("hr")
+        || suf.eq_ignore_ascii_case("hour")
+        || suf.eq_ignore_ascii_case("hours")
+    {
+        Some(Duration::hours(num))
+    } else if suf.eq_ignore_ascii_case("m")
+        || suf.eq_ignore_ascii_case("min")
+        || suf.eq_ignore_ascii_case("minute")
+        || suf.eq_ignore_ascii_case("minutes")
+    {
+        Some(Duration::minutes(num))
+    } else if suf.eq_ignore_ascii_case("s")
+        || suf.eq_ignore_ascii_case("sec")
+        || suf.eq_ignore_ascii_case("second")
+        || suf.eq_ignore_ascii_case("seconds")
+    {
+        Some(Duration::seconds(num))
+    } else {
+        None
     }
 }
 
@@ -459,7 +442,9 @@ fn try_parse_absolute(s: &str) -> TimeResult<DateTime<Utc>> {
     }
     // "2024-05-01" — parse as NaiveDate, then convert
     if let Ok(naive_date) = chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d") {
-        let naive = naive_date.and_hms_opt(0, 0, 0).unwrap();
+        let Some(naive) = naive_date.and_hms_opt(0, 0, 0) else {
+            return Err(TimeError::InvalidDate);
+        };
         return Ok(DateTime::from_naive_utc_and_offset(naive, Utc));
     }
     Err(TimeError::InvalidDate)
