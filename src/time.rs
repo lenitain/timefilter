@@ -343,34 +343,34 @@ fn parse_duration_inner(s: &str) -> Option<Duration> {
 
     let suf = suffix.trim();
     match () {
-        _ if suf.eq_ignore_ascii_case("d")
+        () if suf.eq_ignore_ascii_case("d")
             || suf.eq_ignore_ascii_case("day")
             || suf.eq_ignore_ascii_case("days") =>
         {
             Some(Duration::days(num))
         }
-        _ if suf.eq_ignore_ascii_case("h")
+        () if suf.eq_ignore_ascii_case("h")
             || suf.eq_ignore_ascii_case("hr")
             || suf.eq_ignore_ascii_case("hour")
             || suf.eq_ignore_ascii_case("hours") =>
         {
             Some(Duration::hours(num))
         }
-        _ if suf.eq_ignore_ascii_case("m")
+        () if suf.eq_ignore_ascii_case("m")
             || suf.eq_ignore_ascii_case("min")
             || suf.eq_ignore_ascii_case("minute")
             || suf.eq_ignore_ascii_case("minutes") =>
         {
             Some(Duration::minutes(num))
         }
-        _ if suf.eq_ignore_ascii_case("s")
+        () if suf.eq_ignore_ascii_case("s")
             || suf.eq_ignore_ascii_case("sec")
             || suf.eq_ignore_ascii_case("second")
             || suf.eq_ignore_ascii_case("seconds") =>
         {
             Some(Duration::seconds(num))
         }
-        _ => None,
+        () => None,
     }
 }
 

@@ -78,7 +78,7 @@
 //! let f = TimeFilter::lt(now);
 //! ```
 //!
-//! # TimeFilter convenience constructors
+//! # `TimeFilter` convenience constructors
 //!
 //! ```
 //! use timefilter::TimeFilter;
