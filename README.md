@@ -51,7 +51,3 @@ git clone https://github.com/lenitain/timefilter.git
 cd timefilter
 cargo build --release
 ```
-
-## License
-
-[MIT License](./LICENSE)
