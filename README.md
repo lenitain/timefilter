@@ -1,36 +1,30 @@
 # timefilter
 
+Human-readable time string parsing and filtering with comparison operators.
+
 [![Crates.io](https://img.shields.io/crates/v/timefilter.svg)](https://crates.io/crates/timefilter)
 [![Docs.rs](https://docs.rs/timefilter/badge.svg)](https://docs.rs/timefilter)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/lenitain/timefilter/actions/workflows/ci.yml/badge.svg)](https://github.com/lenitain/timefilter/actions/workflows/ci.yml)
 
-Human-readable time string parsing and **filtering with comparison operators** — `">=7d"`, `"<2h"`, `"2024-05-01"`.
+## Overview
 
-## Installation
+**timefilter** provides human-readable time string parsing and filtering with comparison operators. It supports both relative time expressions (`>=7d`, `<2h`) and absolute timestamps (`2024-05-01`), with optional serde integration for configuration files. The library offers intuitive time manipulation with support for ISO 8601 duration formats.
 
-```bash
-cargo add timefilter
+### Why timefilter?
+
+Unlike other time parsing libraries that only handle basic conversions, **timefilter** provides a complete solution for working with human-readable time expressions in Rust. It supports comparison operators (`>=7d`, `<2h`, `=0`), relative time parsing from "now", and seamless integration with chrono for time arithmetic. The library's support for both relative and absolute time expressions makes it ideal for configuration files, log filtering, and any application that needs to parse time durations from user input. For tools that need to filter events by time or parse human-readable time expressions, timefilter offers the most ergonomic and complete solution.
+
+## Usage
+
+Add to your `Cargo.toml`:
+
+```toml
+[dependencies]
+timefilter = "0.1.2"
 ```
 
-## Features
-
-- **Parse relative time**: `"7d"`, `"2h"`, `"30m"`, `"30s"` → `DateTime<Utc>` (now — duration)
-- **Parse absolute time**: `"2024-05-01"`, `"2024-05-01 10:00"`, `"2024-05-01 10:00:00"`
-- **Parse duration**: `"7d"`, `"2h"`, `"P7D"`, `"PT2H"` → `Duration` (without subtracting from now)
-- **Filter**: `TimeFilter::ge(threshold)` or `">=7d".parse::<TimeFilter>()`
-- **Format**: `format_datetime(&dt)` → local timezone string
-- **Serde** (optional): serialize/deserialize [`TimeFilter`] as strings
-
-## Testing
-
-```bash
-cargo test
-```
-
-53 tests covering parsing, filtering, edge cases, and formatting.
-
-## Quick example
+### Quick start
 
 ```rust
 use timefilter::prelude::*;
@@ -48,21 +42,14 @@ let age = chrono::Utc::now() - dt;
 assert!(age.num_hours() >= 1);
 ```
 
-## Parse duration
+## Building from Source
 
-```rust
-use timefilter::parse_duration;
-use chrono::Duration;
+Requires Rust toolchain.
 
-// Human-readable formats
-assert_eq!(parse_duration("7d").unwrap(), Duration::days(7));
-assert_eq!(parse_duration("2h").unwrap(), Duration::hours(2));
-assert_eq!(parse_duration("30m").unwrap(), Duration::minutes(30));
-
-// ISO 8601 duration format
-assert_eq!(parse_duration("P7D").unwrap(), Duration::days(7));
-assert_eq!(parse_duration("PT2H").unwrap(), Duration::hours(2));
-assert_eq!(parse_duration("P1DT12H").unwrap(), Duration::days(1) + Duration::hours(12));
+```bash
+git clone https://github.com/lenitain/timefilter.git
+cd timefilter
+cargo build --release
 ```
 
 ## License
