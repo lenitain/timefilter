@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `time()` getter method (returns `DateTime<Utc>`)
   - `new()` constructor remains unchanged
 
-- **`TimeOp` implements `Hash`** ([C-COMMON-TRAITS](https://rust-lang.github.io/api-guidelines/interoperability.html#commonly-used-types-should-be-the-same-c-common-traits)):
+- **`TimeOp` implements `Hash`, `Ord`, `PartialOrd`** ([C-COMMON-TRAITS](https://rust-lang.github.io/api-guidelines/interoperability.html#commonly-used-types-should-be-the-same-c-common-traits)):
   ```rust
   use std::collections::HashSet;
   use timefilter::TimeOp;
@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   let ops = HashSet::from([TimeOp::Ge, TimeOp::Lt]);
   assert!(ops.contains(&TimeOp::Ge));
   ```
+
+- **`TimeFilter` implements `Hash`**: can be used as `HashSet` or `HashMap` key.
 
 - **Serde serialization preserves UTC time** (breaking): `TimeFilter` now serializes with UTC time instead of local timezone to ensure roundtrip accuracy.
 
