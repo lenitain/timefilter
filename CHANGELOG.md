@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-06-29
+
+### Changed
+
+- **`TimeFilter` fields are now private** ([C-STRUCT-PRIVATE](https://rust-lang.github.io/api-guidelines/interoperability.html#types-are-send-and-sync-where-possible-c-send-sync)):
+  - `op` and `time` fields are now private
+  - Added `op()` getter method (returns `TimeOp`)
+  - Added `time()` getter method (returns `DateTime<Utc>`)
+  - `new()` constructor remains unchanged
+
+- **`TimeOp` implements `Hash`** ([C-COMMON-TRAITS](https://rust-lang.github.io/api-guidelines/interoperability.html#commonly-used-types-should-be-the-same-c-common-traits)):
+  ```rust
+  use std::collections::HashSet;
+  use timefilter::TimeOp;
+  
+  let ops = HashSet::from([TimeOp::Ge, TimeOp::Lt]);
+  assert!(ops.contains(&TimeOp::Ge));
+  ```
+
+- **Serde serialization preserves UTC time** (breaking): `TimeFilter` now serializes with UTC time instead of local timezone to ensure roundtrip accuracy.
+
+### Migration Guide
+
+**Struct field access** (breaking):
+```rust
+// Before (0.1.x)
+let f: TimeFilter = ">=2024-05-01".parse().unwrap();
+assert_eq!(f.op, TimeOp::Ge);
+assert_eq!(f.time, some_datetime);
+
+// After (0.2.0)
+let f: TimeFilter = ">=2024-05-01".parse().unwrap();
+assert_eq!(f.op(), TimeOp::Ge);
+assert_eq!(f.time(), some_datetime);
+```
+
 ## [Unreleased]
 
 ### Changed

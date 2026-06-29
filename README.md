@@ -21,7 +21,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-timefilter = "0.1.2"
+timefilter = "0.2.0"
 ```
 
 ### Quick start
