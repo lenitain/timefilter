@@ -6,7 +6,7 @@ use timefilter::prelude::*;
 #[test]
 fn from_str() {
     let f: TimeFilter = ">=7d".parse().unwrap();
-    assert_eq!(f.op, TimeOp::Ge);
+    assert_eq!(f.op(), TimeOp::Ge);
 }
 
 #[test]
@@ -21,11 +21,11 @@ fn display() {
 #[test]
 fn convenience_ctors() {
     let now = Utc::now();
-    assert_eq!(TimeFilter::gt(now).op, TimeOp::Gt);
-    assert_eq!(TimeFilter::ge(now).op, TimeOp::Ge);
-    assert_eq!(TimeFilter::lt(now).op, TimeOp::Lt);
-    assert_eq!(TimeFilter::le(now).op, TimeOp::Le);
-    assert_eq!(TimeFilter::eq(now).op, TimeOp::Eq);
+    assert_eq!(TimeFilter::gt(now).op(), TimeOp::Gt);
+    assert_eq!(TimeFilter::ge(now).op(), TimeOp::Ge);
+    assert_eq!(TimeFilter::lt(now).op(), TimeOp::Lt);
+    assert_eq!(TimeFilter::le(now).op(), TimeOp::Le);
+    assert_eq!(TimeFilter::eq(now).op(), TimeOp::Eq);
 }
 
 #[test]
@@ -43,38 +43,38 @@ fn roundtrip_absolute() {
 #[test]
 fn parse_gt() {
     let f = parse_time_filter(">1h").unwrap();
-    assert_eq!(f.op, TimeOp::Gt);
+    assert_eq!(f.op(), TimeOp::Gt);
 }
 
 #[test]
 fn parse_ge() {
     let f = parse_time_filter(">=7d").unwrap();
-    assert_eq!(f.op, TimeOp::Ge);
+    assert_eq!(f.op(), TimeOp::Ge);
 }
 
 #[test]
 fn parse_lt() {
     let f = parse_time_filter("<2026-05-01").unwrap();
-    assert_eq!(f.op, TimeOp::Lt);
-    assert_eq!(f.time.year(), 2026);
-    assert_eq!(f.time.month(), 5);
-    assert_eq!(f.time.day(), 1);
+    assert_eq!(f.op(), TimeOp::Lt);
+    assert_eq!(f.time().year(), 2026);
+    assert_eq!(f.time().month(), 5);
+    assert_eq!(f.time().day(), 1);
 }
 
 #[test]
 fn parse_le() {
     let f = parse_time_filter("<=30m").unwrap();
-    assert_eq!(f.op, TimeOp::Le);
+    assert_eq!(f.op(), TimeOp::Le);
 }
 
 #[test]
 fn parse_eq() {
     let f = parse_time_filter("=2026-05-01 10:00").unwrap();
-    assert_eq!(f.op, TimeOp::Eq);
-    assert_eq!(f.time.year(), 2026);
-    assert_eq!(f.time.month(), 5);
-    assert_eq!(f.time.day(), 1);
-    assert_eq!(f.time.hour(), 10);
+    assert_eq!(f.op(), TimeOp::Eq);
+    assert_eq!(f.time().year(), 2026);
+    assert_eq!(f.time().month(), 5);
+    assert_eq!(f.time().day(), 1);
+    assert_eq!(f.time().hour(), 10);
 }
 
 #[test]

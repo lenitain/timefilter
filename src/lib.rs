@@ -18,7 +18,7 @@
 //!
 //! // Parse a filter expression against absolute time
 //! let f: TimeFilter = ">=2024-05-01 09:00".parse().unwrap();
-//! assert_eq!(f.op, TimeOp::Ge);
+//! assert_eq!(f.op(), TimeOp::Ge);
 //! assert!(f.matches(dt));
 //!
 //! // Relative time (hours ago) — just check it parses

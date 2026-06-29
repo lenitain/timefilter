@@ -15,7 +15,7 @@ use chrono::{DateTime, Duration, Local, NaiveDateTime, Utc};
 ///
 /// Mirrors [`sizefilter::SizeOp`](https://docs.rs/sizefilter) but is an
 /// independent type — the two may evolve differently.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TimeOp {
     /// Greater than (`>`)
     Gt,
@@ -64,8 +64,8 @@ impl fmt::Display for TimeOp {
 /// A time filter with operator (e.g., `>=7d`, `<2026-05-01`).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TimeFilter {
-    pub op: TimeOp,
-    pub time: DateTime<Utc>,
+    op: TimeOp,
+    time: DateTime<Utc>,
 }
 
 impl TimeFilter {
@@ -74,6 +74,20 @@ impl TimeFilter {
     #[must_use]
     pub const fn new(op: TimeOp, time: DateTime<Utc>) -> Self {
         TimeFilter { op, time }
+    }
+
+    /// Get the comparison operator.
+    #[inline]
+    #[must_use]
+    pub const fn op(self) -> TimeOp {
+        self.op
+    }
+
+    /// Get the threshold time.
+    #[inline]
+    #[must_use]
+    pub fn time(self) -> DateTime<Utc> {
+        self.time
     }
 
     /// Filter: `value > threshold`.
@@ -151,7 +165,8 @@ impl FromStr for TimeFilter {
 #[cfg(feature = "serde")]
 impl serde::Serialize for TimeFilter {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.collect_str(self)
+        // Serialize as "op UTC_time" to preserve timezone
+        serializer.collect_str(&format!("{}{}", self.op, self.time.format("%Y-%m-%d %H:%M:%S")))
     }
 }
 
