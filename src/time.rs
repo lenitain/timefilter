@@ -15,7 +15,7 @@ use chrono::{DateTime, Duration, Local, NaiveDateTime, Utc};
 ///
 /// Mirrors [`sizefilter::SizeOp`](https://docs.rs/sizefilter) but is an
 /// independent type — the two may evolve differently.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TimeOp {
     /// Greater than (`>`)
     Gt,
@@ -62,7 +62,7 @@ impl fmt::Display for TimeOp {
 // ── TimeFilter ───────────────────────────────────────────────────────────────
 
 /// A time filter with operator (e.g., `>=7d`, `<2026-05-01`).
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TimeFilter {
     op: TimeOp,
     time: DateTime<Utc>,
