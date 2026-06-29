@@ -19,7 +19,10 @@ fn serde_roundtrip_time_filter() {
     let parsed: TimeFilter = serde_json::from_str(&json).unwrap();
     assert_eq!(parsed.op(), TimeOp::Ge);
     // Compare as strings to avoid timezone issues
-    assert_eq!(parsed.time().format("%Y-%m-%d %H:%M:%S").to_string(), "2024-05-01 10:00:00");
+    assert_eq!(
+        parsed.time().format("%Y-%m-%d %H:%M:%S").to_string(),
+        "2024-05-01 10:00:00"
+    );
 }
 
 #[test]

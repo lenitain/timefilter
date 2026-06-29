@@ -166,7 +166,11 @@ impl FromStr for TimeFilter {
 impl serde::Serialize for TimeFilter {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         // Serialize as "op UTC_time" to preserve timezone
-        serializer.collect_str(&format!("{}{}", self.op, self.time.format("%Y-%m-%d %H:%M:%S")))
+        serializer.collect_str(&format!(
+            "{}{}",
+            self.op,
+            self.time.format("%Y-%m-%d %H:%M:%S")
+        ))
     }
 }
 
