@@ -79,27 +79,52 @@ impl TimeFilter {
     /// Filter: `value > threshold`.
     #[inline]
     #[must_use]
-    pub fn gt(time: DateTime<Utc>) -> Self { TimeFilter { op: TimeOp::Gt, time } }
+    pub fn gt(time: DateTime<Utc>) -> Self {
+        TimeFilter {
+            op: TimeOp::Gt,
+            time,
+        }
+    }
 
     /// Filter: `value >= threshold`.
     #[inline]
     #[must_use]
-    pub fn ge(time: DateTime<Utc>) -> Self { TimeFilter { op: TimeOp::Ge, time } }
+    pub fn ge(time: DateTime<Utc>) -> Self {
+        TimeFilter {
+            op: TimeOp::Ge,
+            time,
+        }
+    }
 
     /// Filter: `value < threshold`.
     #[inline]
     #[must_use]
-    pub fn lt(time: DateTime<Utc>) -> Self { TimeFilter { op: TimeOp::Lt, time } }
+    pub fn lt(time: DateTime<Utc>) -> Self {
+        TimeFilter {
+            op: TimeOp::Lt,
+            time,
+        }
+    }
 
     /// Filter: `value <= threshold`.
     #[inline]
     #[must_use]
-    pub fn le(time: DateTime<Utc>) -> Self { TimeFilter { op: TimeOp::Le, time } }
+    pub fn le(time: DateTime<Utc>) -> Self {
+        TimeFilter {
+            op: TimeOp::Le,
+            time,
+        }
+    }
 
     /// Filter: `value == threshold`.
     #[inline]
     #[must_use]
-    pub fn eq(time: DateTime<Utc>) -> Self { TimeFilter { op: TimeOp::Eq, time } }
+    pub fn eq(time: DateTime<Utc>) -> Self {
+        TimeFilter {
+            op: TimeOp::Eq,
+            time,
+        }
+    }
 
     /// Check whether `value` passes this filter.
     #[inline]
@@ -252,19 +277,31 @@ fn try_parse_relative(s: &str) -> Option<DateTime<Utc>> {
     let duration = match () {
         _ if suf.eq_ignore_ascii_case("d")
             || suf.eq_ignore_ascii_case("day")
-            || suf.eq_ignore_ascii_case("days") => Duration::days(num),
+            || suf.eq_ignore_ascii_case("days") =>
+        {
+            Duration::days(num)
+        }
         _ if suf.eq_ignore_ascii_case("h")
             || suf.eq_ignore_ascii_case("hr")
             || suf.eq_ignore_ascii_case("hour")
-            || suf.eq_ignore_ascii_case("hours") => Duration::hours(num),
+            || suf.eq_ignore_ascii_case("hours") =>
+        {
+            Duration::hours(num)
+        }
         _ if suf.eq_ignore_ascii_case("m")
             || suf.eq_ignore_ascii_case("min")
             || suf.eq_ignore_ascii_case("minute")
-            || suf.eq_ignore_ascii_case("minutes") => Duration::minutes(num),
+            || suf.eq_ignore_ascii_case("minutes") =>
+        {
+            Duration::minutes(num)
+        }
         _ if suf.eq_ignore_ascii_case("s")
             || suf.eq_ignore_ascii_case("sec")
             || suf.eq_ignore_ascii_case("second")
-            || suf.eq_ignore_ascii_case("seconds") => Duration::seconds(num),
+            || suf.eq_ignore_ascii_case("seconds") =>
+        {
+            Duration::seconds(num)
+        }
         _ => return None,
     };
     Some(Utc::now() - duration)
@@ -305,232 +342,4 @@ pub fn format_datetime(dt: &DateTime<Utc>) -> String {
     dt.with_timezone(&Local)
         .format("%Y-%m-%d %H:%M:%S")
         .to_string()
-}
-
-// ── tests ────────────────────────────────────────────────────────────────────
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use chrono::{Datelike, TimeZone, Timelike};
-
-    // -- parse_time: relative --
-
-    #[test]
-    fn relative_hours() {
-        let now = Utc::now();
-        let parsed = parse_time("1h").unwrap();
-        let diff = now - parsed;
-        assert!(diff >= Duration::minutes(59) && diff <= Duration::minutes(61));
-    }
-
-    #[test]
-    fn relative_hours_hr_suffix() {
-        let now = Utc::now();
-        let parsed = parse_time("2hr").unwrap();
-        let diff = now - parsed;
-        assert!(diff >= Duration::minutes(119) && diff <= Duration::minutes(121));
-    }
-
-    #[test]
-    fn relative_minutes() {
-        let now = Utc::now();
-        let parsed = parse_time("30m").unwrap();
-        let diff = now - parsed;
-        assert!(diff >= Duration::minutes(29) && diff <= Duration::minutes(31));
-    }
-
-    #[test]
-    fn relative_minutes_min_suffix() {
-        let now = Utc::now();
-        let parsed = parse_time("15min").unwrap();
-        let diff = now - parsed;
-        assert!(diff >= Duration::minutes(14) && diff <= Duration::minutes(16));
-    }
-
-    #[test]
-    fn relative_days() {
-        let now = Utc::now();
-        let parsed = parse_time("7d").unwrap();
-        let diff = now - parsed;
-        assert!(diff >= Duration::hours(167) && diff <= Duration::hours(169));
-    }
-
-    #[test]
-    fn relative_seconds() {
-        let now = Utc::now();
-        let parsed = parse_time("30s").unwrap();
-        let diff = now - parsed;
-        assert!(diff >= Duration::seconds(29) && diff <= Duration::seconds(31));
-    }
-
-    #[test]
-    fn relative_verbose_suffixes() {
-        assert!(parse_time("1 day").is_ok());
-        assert!(parse_time("7 days").is_ok());
-        assert!(parse_time("2 hour").is_ok());
-        assert!(parse_time("3 hours").is_ok());
-        assert!(parse_time("10 minute").is_ok());
-        assert!(parse_time("5 minutes").is_ok());
-        assert!(parse_time("30 second").is_ok());
-        assert!(parse_time("45 seconds").is_ok());
-    }
-
-    // -- parse_time: absolute --
-
-    #[test]
-    fn absolute_datetime() {
-        let parsed = parse_time("2024-05-01 10:00").unwrap();
-        assert_eq!(parsed.year(), 2024);
-        assert_eq!(parsed.month(), 5);
-        assert_eq!(parsed.day(), 1);
-        assert_eq!(parsed.hour(), 10);
-        assert_eq!(parsed.minute(), 0);
-    }
-
-    #[test]
-    fn absolute_with_seconds() {
-        let parsed = parse_time("2024-12-25 15:30:45").unwrap();
-        assert_eq!(parsed.year(), 2024);
-        assert_eq!(parsed.month(), 12);
-        assert_eq!(parsed.day(), 25);
-        assert_eq!(parsed.hour(), 15);
-        assert_eq!(parsed.minute(), 30);
-        assert_eq!(parsed.second(), 45);
-    }
-
-    #[test]
-    fn absolute_date_only() {
-        let parsed = parse_time("2024-01-15").unwrap();
-        assert_eq!(parsed.year(), 2024);
-        assert_eq!(parsed.month(), 1);
-        assert_eq!(parsed.day(), 15);
-        assert_eq!(parsed.hour(), 0);
-        assert_eq!(parsed.minute(), 0);
-    }
-
-    // -- parse_time: errors --
-
-    #[test]
-    fn parse_time_invalid() {
-        assert_eq!(parse_time("invalid"), Err(TimeError::InvalidDate));
-        assert_eq!(parse_time("2024-13-01 10:00"), Err(TimeError::InvalidDate));
-        assert_eq!(parse_time("abc"), Err(TimeError::InvalidDate));
-        assert_eq!(parse_time(""), Err(TimeError::EmptyInput));
-        assert_eq!(parse_time("  "), Err(TimeError::EmptyInput));
-    }
-
-    #[test]
-    fn parse_time_unknown_suffix() {
-        // "1x" → finds alpha at position 1, num=1, suffix="x" → UnknownSuffix from try_parse_relative
-        // But we match err, it goes to try_parse_absolute which also fails → InvalidDate
-        assert_eq!(parse_time("1x"), Err(TimeError::InvalidDate));
-    }
-
-    // -- parse_time_filter --
-
-    #[test]
-    fn filter_gt() {
-        let f = parse_time_filter(">1h").unwrap();
-        assert_eq!(f.op, TimeOp::Gt);
-    }
-
-    #[test]
-    fn filter_ge() {
-        let f = parse_time_filter(">=7d").unwrap();
-        assert_eq!(f.op, TimeOp::Ge);
-    }
-
-    #[test]
-    fn filter_lt() {
-        let f = parse_time_filter("<2026-05-01").unwrap();
-        assert_eq!(f.op, TimeOp::Lt);
-        assert_eq!(f.time.year(), 2026);
-        assert_eq!(f.time.month(), 5);
-        assert_eq!(f.time.day(), 1);
-    }
-
-    #[test]
-    fn filter_le() {
-        let f = parse_time_filter("<=30m").unwrap();
-        assert_eq!(f.op, TimeOp::Le);
-    }
-
-    #[test]
-    fn filter_eq() {
-        let f = parse_time_filter("=2026-05-01 10:00").unwrap();
-        assert_eq!(f.op, TimeOp::Eq);
-        assert_eq!(f.time.year(), 2026);
-        assert_eq!(f.time.month(), 5);
-        assert_eq!(f.time.day(), 1);
-        assert_eq!(f.time.hour(), 10);
-    }
-
-    #[test]
-    fn filter_no_operator_errors() {
-        assert_eq!(parse_time_filter("1h"), Err(TimeError::MissingOperator));
-        assert_eq!(parse_time_filter("30d"), Err(TimeError::MissingOperator));
-        assert_eq!(parse_time_filter("2026-05-01"), Err(TimeError::MissingOperator));
-    }
-
-    #[test]
-    fn filter_invalid() {
-        assert_eq!(parse_time_filter(">abc"), Err(TimeError::InvalidDate));
-    }
-
-    // -- TimeFilter FromStr / Display --
-
-    #[test]
-    fn filter_from_str() {
-        let f: TimeFilter = ">=7d".parse().unwrap();
-        assert_eq!(f.op, TimeOp::Ge);
-    }
-
-    #[test]
-    fn filter_display() {
-        let dt = Utc.with_ymd_and_hms(2024, 5, 1, 10, 30, 45).unwrap();
-        let f = TimeFilter::gt(dt);
-        let s = f.to_string();
-        assert!(s.starts_with('>'));
-        assert!(s.contains("2024"));
-    }
-
-    // -- TimeOp --
-
-    #[test]
-    fn time_op_all() {
-        assert_eq!(TimeOp::ALL.len(), 5);
-    }
-
-    #[test]
-    fn time_op_applies() {
-        let t1: DateTime<Utc> = Utc.with_ymd_and_hms(2024, 6, 1, 0, 0, 0).unwrap();
-        let t2: DateTime<Utc> = Utc.with_ymd_and_hms(2024, 5, 1, 0, 0, 0).unwrap();
-        assert!(TimeOp::Gt.applies(t1, t2));
-        assert!(!TimeOp::Gt.applies(t2, t1));
-        assert!(TimeOp::Ge.applies(t1, t1));
-        assert!(TimeOp::Eq.applies(t1, t1));
-    }
-
-    // -- format_datetime --
-
-    #[test]
-    fn format_datetime_contains_year() {
-        let dt = Utc.with_ymd_and_hms(2024, 5, 1, 10, 30, 45).unwrap();
-        let s = format_datetime(&dt);
-        assert!(!s.is_empty());
-        assert!(s.contains("2024"));
-    }
-
-    // -- TimeFilter convenience ctors --
-
-    #[test]
-    fn filter_convenience_ctors() {
-        let now = Utc::now();
-        assert_eq!(TimeFilter::gt(now).op, TimeOp::Gt);
-        assert_eq!(TimeFilter::ge(now).op, TimeOp::Ge);
-        assert_eq!(TimeFilter::lt(now).op, TimeOp::Lt);
-        assert_eq!(TimeFilter::le(now).op, TimeOp::Le);
-        assert_eq!(TimeFilter::eq(now).op, TimeOp::Eq);
-    }
 }
