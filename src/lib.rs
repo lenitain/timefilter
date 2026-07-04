@@ -18,7 +18,7 @@
 //!
 //! // Parse a filter expression against absolute time
 //! let f: TimeFilter = ">=2024-05-01 09:00".parse().unwrap();
-//! assert_eq!(f.op, TimeOp::Ge);
+//! assert_eq!(f.op(), TimeOp::Ge);
 //! assert!(f.matches(dt));
 //!
 //! // Relative time (hours ago) — just check it parses
@@ -78,7 +78,7 @@
 //! let f = TimeFilter::lt(now);
 //! ```
 //!
-//! # TimeFilter convenience constructors
+//! # `TimeFilter` convenience constructors
 //!
 //! ```
 //! use timefilter::TimeFilter;
@@ -148,6 +148,6 @@ pub use time::*;
 
 /// Easy import of the crate's most common items.
 pub mod prelude {
-    pub use super::{TimeError, TimeFilter, TimeOp, TimeResult};
-    pub use super::{format_datetime, parse_duration, parse_time, parse_time_filter};
+    pub use crate::{TimeError, TimeFilter, TimeOp, TimeResult};
+    pub use crate::{format_datetime, parse_duration, parse_time, parse_time_filter};
 }

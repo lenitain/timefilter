@@ -15,7 +15,7 @@ use chrono::{DateTime, Duration, Local, NaiveDateTime, Utc};
 ///
 /// Mirrors [`sizefilter::SizeOp`](https://docs.rs/sizefilter) but is an
 /// independent type — the two may evolve differently.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TimeOp {
     /// Greater than (`>`)
     Gt,
@@ -62,10 +62,10 @@ impl fmt::Display for TimeOp {
 // ── TimeFilter ───────────────────────────────────────────────────────────────
 
 /// A time filter with operator (e.g., `>=7d`, `<2026-05-01`).
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TimeFilter {
-    pub op: TimeOp,
-    pub time: DateTime<Utc>,
+    op: TimeOp,
+    time: DateTime<Utc>,
 }
 
 impl TimeFilter {
@@ -76,10 +76,24 @@ impl TimeFilter {
         TimeFilter { op, time }
     }
 
+    /// Get the comparison operator.
+    #[inline]
+    #[must_use]
+    pub const fn op(self) -> TimeOp {
+        self.op
+    }
+
+    /// Get the threshold time.
+    #[inline]
+    #[must_use]
+    pub fn time(self) -> DateTime<Utc> {
+        self.time
+    }
+
     /// Filter: `value > threshold`.
     #[inline]
     #[must_use]
-    pub fn gt(time: DateTime<Utc>) -> Self {
+    pub const fn gt(time: DateTime<Utc>) -> Self {
         TimeFilter {
             op: TimeOp::Gt,
             time,
@@ -89,7 +103,7 @@ impl TimeFilter {
     /// Filter: `value >= threshold`.
     #[inline]
     #[must_use]
-    pub fn ge(time: DateTime<Utc>) -> Self {
+    pub const fn ge(time: DateTime<Utc>) -> Self {
         TimeFilter {
             op: TimeOp::Ge,
             time,
@@ -99,7 +113,7 @@ impl TimeFilter {
     /// Filter: `value < threshold`.
     #[inline]
     #[must_use]
-    pub fn lt(time: DateTime<Utc>) -> Self {
+    pub const fn lt(time: DateTime<Utc>) -> Self {
         TimeFilter {
             op: TimeOp::Lt,
             time,
@@ -109,7 +123,7 @@ impl TimeFilter {
     /// Filter: `value <= threshold`.
     #[inline]
     #[must_use]
-    pub fn le(time: DateTime<Utc>) -> Self {
+    pub const fn le(time: DateTime<Utc>) -> Self {
         TimeFilter {
             op: TimeOp::Le,
             time,
@@ -119,7 +133,7 @@ impl TimeFilter {
     /// Filter: `value == threshold`.
     #[inline]
     #[must_use]
-    pub fn eq(time: DateTime<Utc>) -> Self {
+    pub const fn eq(time: DateTime<Utc>) -> Self {
         TimeFilter {
             op: TimeOp::Eq,
             time,
@@ -151,7 +165,12 @@ impl FromStr for TimeFilter {
 #[cfg(feature = "serde")]
 impl serde::Serialize for TimeFilter {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.collect_str(self)
+        // Serialize as "op UTC_time" to preserve timezone
+        serializer.collect_str(&format!(
+            "{}{}",
+            self.op,
+            self.time.format("%Y-%m-%d %H:%M:%S")
+        ))
     }
 }
 
@@ -194,7 +213,7 @@ impl fmt::Display for TimeError {
                 "time filter must start with an operator (>=, >, <=, <, =)"
             }
             TimeError::EmptyInput => "empty input",
-            TimeError::UnknownSuffix => "unknown time suffix (expected h, hr, m, min, d, s)",
+            TimeError::UnknownSuffix => "unknown time suffix",
             TimeError::InvalidNumber => "failed to parse number",
             TimeError::InvalidDate => "failed to parse date/time",
         })
@@ -218,19 +237,17 @@ pub type TimeResult<T> = Result<T, TimeError>;
 /// or [`TimeError`] variants from time parsing.
 pub fn parse_time_filter(s: &str) -> TimeResult<TimeFilter> {
     let s = s.trim();
-    let (op, rest) = if let Some(r) = s.strip_prefix(">=") {
-        (TimeOp::Ge, r)
-    } else if let Some(r) = s.strip_prefix("<=") {
-        (TimeOp::Le, r)
-    } else if let Some(r) = s.strip_prefix('>') {
-        (TimeOp::Gt, r)
-    } else if let Some(r) = s.strip_prefix('<') {
-        (TimeOp::Lt, r)
-    } else if let Some(r) = s.strip_prefix('=') {
-        (TimeOp::Eq, r)
-    } else {
-        return Err(TimeError::MissingOperator);
-    };
+    let prefixes: &[(&str, TimeOp)] = &[
+        (">=", TimeOp::Ge),
+        ("<=", TimeOp::Le),
+        (">", TimeOp::Gt),
+        ("<", TimeOp::Lt),
+        ("=", TimeOp::Eq),
+    ];
+    let (op, rest) = prefixes
+        .iter()
+        .find_map(|&(prefix, op)| s.strip_prefix(prefix).map(|r| (op, r)))
+        .ok_or(TimeError::MissingOperator)?;
     let time = parse_time(rest)?;
     Ok(TimeFilter { op, time })
 }
@@ -272,18 +289,6 @@ fn try_parse_relative(s: &str) -> Option<DateTime<Utc>> {
     Some(Utc::now() - duration)
 }
 
-/// Parse human-readable duration string to `Duration`.
-///
-/// Supports relative formats:
-/// - `"7d"`, `"7 days"` — days
-/// - `"2h"`, `"2hr"` — hours
-/// - `"30m"`, `"30min"` — minutes
-/// - `"30s"` — seconds
-///
-/// Also supports ISO 8601 duration format:
-/// - `"P7D"` — 7 days
-/// - `"PT2H"` — 2 hours
-/// - `"P1DT12H"` — 1 day and 12 hours
 /// Parse human-readable duration string to `Duration`.
 ///
 /// Supports relative formats:
@@ -343,92 +348,100 @@ fn parse_duration_inner(s: &str) -> Option<Duration> {
     let num: i64 = num_str.trim().parse().ok()?;
 
     let suf = suffix.trim();
-    match () {
-        _ if suf.eq_ignore_ascii_case("d")
-            || suf.eq_ignore_ascii_case("day")
-            || suf.eq_ignore_ascii_case("days") =>
-        {
-            Some(Duration::days(num))
-        }
-        _ if suf.eq_ignore_ascii_case("h")
-            || suf.eq_ignore_ascii_case("hr")
-            || suf.eq_ignore_ascii_case("hour")
-            || suf.eq_ignore_ascii_case("hours") =>
-        {
-            Some(Duration::hours(num))
-        }
-        _ if suf.eq_ignore_ascii_case("m")
-            || suf.eq_ignore_ascii_case("min")
-            || suf.eq_ignore_ascii_case("minute")
-            || suf.eq_ignore_ascii_case("minutes") =>
-        {
-            Some(Duration::minutes(num))
-        }
-        _ if suf.eq_ignore_ascii_case("s")
-            || suf.eq_ignore_ascii_case("sec")
-            || suf.eq_ignore_ascii_case("second")
-            || suf.eq_ignore_ascii_case("seconds") =>
-        {
-            Some(Duration::seconds(num))
-        }
-        _ => None,
+    if suf.eq_ignore_ascii_case("d")
+        || suf.eq_ignore_ascii_case("day")
+        || suf.eq_ignore_ascii_case("days")
+    {
+        Some(Duration::days(num))
+    } else if suf.eq_ignore_ascii_case("h")
+        || suf.eq_ignore_ascii_case("hr")
+        || suf.eq_ignore_ascii_case("hour")
+        || suf.eq_ignore_ascii_case("hours")
+    {
+        Some(Duration::hours(num))
+    } else if suf.eq_ignore_ascii_case("m")
+        || suf.eq_ignore_ascii_case("min")
+        || suf.eq_ignore_ascii_case("minute")
+        || suf.eq_ignore_ascii_case("minutes")
+    {
+        Some(Duration::minutes(num))
+    } else if suf.eq_ignore_ascii_case("s")
+        || suf.eq_ignore_ascii_case("sec")
+        || suf.eq_ignore_ascii_case("second")
+        || suf.eq_ignore_ascii_case("seconds")
+    {
+        Some(Duration::seconds(num))
+    } else {
+        None
     }
 }
 
 fn parse_iso8601_duration(s: &str) -> TimeResult<Duration> {
-    let s = s.to_uppercase();
-    let s = s.trim_start_matches('P');
+    // Trim leading 'P' (case-insensitive) without allocating
+    let s = if s.as_bytes().first() == Some(&b'P') || s.as_bytes().first() == Some(&b'p') {
+        &s[1..]
+    } else {
+        return Err(TimeError::UnknownSuffix);
+    };
 
     if s.is_empty() {
         return Err(TimeError::InvalidNumber);
     }
 
     let mut total_seconds = 0i64;
-    let mut current_num = String::new();
+    let mut num_start: Option<usize> = None;
     let mut in_time = false;
+    let bytes = s.as_bytes();
 
-    for c in s.chars() {
-        match c {
-            'T' => {
+    for (i, &b) in bytes.iter().enumerate() {
+        match b {
+            b'T' | b't' => {
                 in_time = true;
-                if !current_num.is_empty() {
+                if num_start.is_some() {
                     return Err(TimeError::InvalidNumber);
                 }
             }
-            '0'..='9' => {
-                current_num.push(c);
-            }
-            'D' => {
-                if current_num.is_empty() {
-                    return Err(TimeError::InvalidNumber);
+            b'0'..=b'9' => {
+                if num_start.is_none() {
+                    num_start = Some(i);
                 }
-                let days: i64 = current_num.parse().map_err(|_| TimeError::InvalidNumber)?;
+            }
+            b'D' | b'd' => {
+                let Some(start) = num_start.take() else {
+                    return Err(TimeError::InvalidNumber);
+                };
+                let days: i64 = s[start..i].parse().map_err(|_| TimeError::InvalidNumber)?;
                 total_seconds += days * 86400;
-                current_num.clear();
             }
-            'H' => {
-                if current_num.is_empty() || !in_time {
+            b'H' | b'h' => {
+                let Some(start) = num_start.take() else {
+                    return Err(TimeError::InvalidNumber);
+                };
+                if !in_time {
                     return Err(TimeError::InvalidNumber);
                 }
-                let hours: i64 = current_num.parse().map_err(|_| TimeError::InvalidNumber)?;
+                let hours: i64 = s[start..i].parse().map_err(|_| TimeError::InvalidNumber)?;
                 total_seconds += hours * 3600;
-                current_num.clear();
             }
-            'M' => {
-                if current_num.is_empty() || !in_time {
+            b'M' | b'm' => {
+                let Some(start) = num_start.take() else {
+                    return Err(TimeError::InvalidNumber);
+                };
+                if !in_time {
                     return Err(TimeError::InvalidNumber);
                 }
-                let minutes: i64 = current_num.parse().map_err(|_| TimeError::InvalidNumber)?;
+                let minutes: i64 = s[start..i].parse().map_err(|_| TimeError::InvalidNumber)?;
                 total_seconds += minutes * 60;
-                current_num.clear();
             }
-            'S' => {
-                if current_num.is_empty() || !in_time {
+            b'S' | b's' => {
+                let Some(start) = num_start.take() else {
+                    return Err(TimeError::InvalidNumber);
+                };
+                if !in_time {
                     return Err(TimeError::InvalidNumber);
                 }
-                let seconds: i64 = current_num.parse().map_err(|_| TimeError::InvalidNumber)?;
+                let seconds: i64 = s[start..i].parse().map_err(|_| TimeError::InvalidNumber)?;
                 total_seconds += seconds;
-                current_num.clear();
             }
             _ => {
                 return Err(TimeError::UnknownSuffix);
@@ -437,7 +450,7 @@ fn parse_iso8601_duration(s: &str) -> TimeResult<Duration> {
     }
 
     // If there's remaining unparsed number, it's an error
-    if !current_num.is_empty() {
+    if num_start.is_some() {
         return Err(TimeError::InvalidNumber);
     }
 
@@ -460,7 +473,9 @@ fn try_parse_absolute(s: &str) -> TimeResult<DateTime<Utc>> {
     }
     // "2024-05-01" — parse as NaiveDate, then convert
     if let Ok(naive_date) = chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d") {
-        let naive = naive_date.and_hms_opt(0, 0, 0).unwrap();
+        let Some(naive) = naive_date.and_hms_opt(0, 0, 0) else {
+            return Err(TimeError::InvalidDate);
+        };
         return Ok(DateTime::from_naive_utc_and_offset(naive, Utc));
     }
     Err(TimeError::InvalidDate)
