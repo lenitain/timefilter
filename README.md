@@ -15,6 +15,7 @@ cargo add timefilter
 
 - **Parse relative time**: `"7d"`, `"2h"`, `"30m"`, `"30s"` → `DateTime<Utc>` (now — duration)
 - **Parse absolute time**: `"2024-05-01"`, `"2024-05-01 10:00"`, `"2024-05-01 10:00:00"`
+- **Parse duration**: `"7d"`, `"2h"`, `"P7D"`, `"PT2H"` → `Duration` (without subtracting from now)
 - **Filter**: `TimeFilter::ge(threshold)` or `">=7d".parse::<TimeFilter>()`
 - **Format**: `format_datetime(&dt)` → local timezone string
 - **Serde** (optional): serialize/deserialize [`TimeFilter`] as strings
@@ -25,7 +26,7 @@ cargo add timefilter
 cargo test
 ```
 
-30 tests (25 unit + 5 doc-tests) covering parsing, filtering, edge cases, and formatting.
+42 tests covering parsing, filtering, edge cases, and formatting.
 
 ## Quick example
 
@@ -43,6 +44,23 @@ assert!(f.matches(dt));
 let dt = parse_time("2h").unwrap();
 let age = chrono::Utc::now() - dt;
 assert!(age.num_hours() >= 1);
+```
+
+## Parse duration
+
+```rust
+use timefilter::parse_duration;
+use chrono::Duration;
+
+// Human-readable formats
+assert_eq!(parse_duration("7d").unwrap(), Duration::days(7));
+assert_eq!(parse_duration("2h").unwrap(), Duration::hours(2));
+assert_eq!(parse_duration("30m").unwrap(), Duration::minutes(30));
+
+// ISO 8601 duration format
+assert_eq!(parse_duration("P7D").unwrap(), Duration::days(7));
+assert_eq!(parse_duration("PT2H").unwrap(), Duration::hours(2));
+assert_eq!(parse_duration("P1DT12H").unwrap(), Duration::days(1) + Duration::hours(12));
 ```
 
 ## License
