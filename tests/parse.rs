@@ -1,202 +1,225 @@
-use chrono::{Datelike, Duration, Timelike, Utc};
-use timefilter::{parse_duration, prelude::*};
+//! Duration parser and formatter tests.
 
-// -- relative time --
+use jiff::SignedDuration;
+use timefilter::prelude::*;
 
-#[test]
-fn hours() {
-    let now = Utc::now();
-    let parsed = parse_time("1h").unwrap();
-    let diff = now - parsed;
-    assert!(diff >= Duration::minutes(59) && diff <= Duration::minutes(61));
+fn dur(s: &str) -> SignedDuration {
+    parse_duration(s).unwrap()
 }
 
 #[test]
-fn hours_hr_suffix() {
-    let now = Utc::now();
-    let parsed = parse_time("2hr").unwrap();
-    let diff = now - parsed;
-    assert!(diff >= Duration::minutes(119) && diff <= Duration::minutes(121));
+fn human_units() {
+    assert_eq!(dur("7d"), SignedDuration::from_hours(7 * 24));
+    assert_eq!(dur("1w"), SignedDuration::from_hours(7 * 24));
+    assert_eq!(dur("2 weeks"), SignedDuration::from_hours(14 * 24));
+    assert_eq!(dur("1 wk"), SignedDuration::from_hours(7 * 24));
+    assert_eq!(dur("1 day"), SignedDuration::from_hours(24));
+    assert_eq!(dur("3 DAYS"), SignedDuration::from_hours(3 * 24));
+    assert_eq!(dur("2h"), SignedDuration::from_hours(2));
+    assert_eq!(dur("1hr"), SignedDuration::from_hours(1));
+    assert_eq!(dur("24 hours"), SignedDuration::from_hours(24));
+    assert_eq!(dur("30m"), SignedDuration::from_mins(30));
+    assert_eq!(dur("1M"), SignedDuration::from_mins(1)); // M is minutes; months are `mo`
+    assert_eq!(dur("15min"), SignedDuration::from_mins(15));
+    assert_eq!(dur("1 minute"), SignedDuration::from_mins(1));
+    assert_eq!(dur("2 mins"), SignedDuration::from_mins(2));
+    assert_eq!(dur("30s"), SignedDuration::from_secs(30));
+    assert_eq!(dur("1sec"), SignedDuration::from_secs(1));
+    assert_eq!(dur("45 seconds"), SignedDuration::from_secs(45));
 }
 
 #[test]
-fn minutes() {
-    let now = Utc::now();
-    let parsed = parse_time("30m").unwrap();
-    let diff = now - parsed;
-    assert!(diff >= Duration::minutes(29) && diff <= Duration::minutes(31));
-}
-
-#[test]
-fn minutes_min_suffix() {
-    let now = Utc::now();
-    let parsed = parse_time("15min").unwrap();
-    let diff = now - parsed;
-    assert!(diff >= Duration::minutes(14) && diff <= Duration::minutes(16));
-}
-
-#[test]
-fn days() {
-    let now = Utc::now();
-    let parsed = parse_time("7d").unwrap();
-    let diff = now - parsed;
-    assert!(diff >= Duration::hours(167) && diff <= Duration::hours(169));
-}
-
-#[test]
-fn seconds() {
-    let now = Utc::now();
-    let parsed = parse_time("30s").unwrap();
-    let diff = now - parsed;
-    assert!(diff >= Duration::seconds(29) && diff <= Duration::seconds(31));
-}
-
-#[test]
-fn verbose_suffixes() {
-    assert!(parse_time("1 day").is_ok());
-    assert!(parse_time("7 days").is_ok());
-    assert!(parse_time("2 hour").is_ok());
-    assert!(parse_time("3 hours").is_ok());
-    assert!(parse_time("10 minute").is_ok());
-    assert!(parse_time("5 minutes").is_ok());
-    assert!(parse_time("30 second").is_ok());
-    assert!(parse_time("45 seconds").is_ok());
-}
-
-#[test]
-fn negative_relative_time() {
-    // "-1h" means 1 hour in the FUTURE (now - (-1h) = now + 1h)
-    let now = Utc::now();
-    let parsed = parse_time("-1h").unwrap();
-    let diff = parsed - now;
-    assert!(diff.num_minutes() >= 59 && diff.num_minutes() <= 61);
-}
-
-// -- absolute time --
-
-#[test]
-fn datetime() {
-    let parsed = parse_time("2024-05-01 10:00").unwrap();
-    assert_eq!(parsed.year(), 2024);
-    assert_eq!(parsed.month(), 5);
-    assert_eq!(parsed.day(), 1);
-    assert_eq!(parsed.hour(), 10);
-    assert_eq!(parsed.minute(), 0);
-}
-
-#[test]
-fn with_seconds() {
-    let parsed = parse_time("2024-12-25 15:30:45").unwrap();
-    assert_eq!(parsed.year(), 2024);
-    assert_eq!(parsed.month(), 12);
-    assert_eq!(parsed.day(), 25);
-    assert_eq!(parsed.hour(), 15);
-    assert_eq!(parsed.minute(), 30);
-    assert_eq!(parsed.second(), 45);
-}
-
-#[test]
-fn date_only() {
-    let parsed = parse_time("2024-01-15").unwrap();
-    assert_eq!(parsed.year(), 2024);
-    assert_eq!(parsed.month(), 1);
-    assert_eq!(parsed.day(), 15);
-    assert_eq!(parsed.hour(), 0);
-    assert_eq!(parsed.minute(), 0);
-}
-
-#[test]
-fn leap_year() {
-    let dt = parse_time("2024-02-29").unwrap();
-    assert_eq!(dt.month(), 2);
-    assert_eq!(dt.day(), 29);
-}
-
-#[test]
-fn invalid_leap_year() {
-    assert_eq!(parse_time("2023-02-29"), Err(TimeError::InvalidDate));
-}
-
-#[test]
-fn edge_day_month_boundaries() {
-    assert_eq!(parse_time("2024-01-32"), Err(TimeError::InvalidDate));
-    assert_eq!(parse_time("2024-13-01"), Err(TimeError::InvalidDate));
-    assert_eq!(parse_time("2024-04-31"), Err(TimeError::InvalidDate));
-}
-
-// -- errors --
-
-#[test]
-fn invalid() {
-    assert_eq!(parse_time("invalid"), Err(TimeError::InvalidDate));
-    assert_eq!(parse_time("2024-13-01 10:00"), Err(TimeError::InvalidDate));
-    assert_eq!(parse_time("abc"), Err(TimeError::InvalidDate));
-    assert_eq!(parse_time(""), Err(TimeError::EmptyInput));
-    assert_eq!(parse_time("  "), Err(TimeError::EmptyInput));
-}
-
-#[test]
-fn unknown_suffix() {
-    assert_eq!(parse_time("1x"), Err(TimeError::InvalidDate));
-}
-
-// -- parse_duration --
-
-#[test]
-fn parse_duration_days() {
-    assert_eq!(parse_duration("7d").unwrap(), Duration::days(7));
-    assert_eq!(parse_duration("1 day").unwrap(), Duration::days(1));
-    assert_eq!(parse_duration("3 days").unwrap(), Duration::days(3));
-}
-
-#[test]
-fn parse_duration_hours() {
-    assert_eq!(parse_duration("2h").unwrap(), Duration::hours(2));
-    assert_eq!(parse_duration("1hr").unwrap(), Duration::hours(1));
-    assert_eq!(parse_duration("24 hours").unwrap(), Duration::hours(24));
-}
-
-#[test]
-fn parse_duration_minutes() {
-    assert_eq!(parse_duration("30m").unwrap(), Duration::minutes(30));
-    assert_eq!(parse_duration("15min").unwrap(), Duration::minutes(15));
-    assert_eq!(parse_duration("1 minute").unwrap(), Duration::minutes(1));
-}
-
-#[test]
-fn parse_duration_seconds() {
-    assert_eq!(parse_duration("30s").unwrap(), Duration::seconds(30));
-    assert_eq!(parse_duration("1sec").unwrap(), Duration::seconds(1));
-    assert_eq!(parse_duration("45 seconds").unwrap(), Duration::seconds(45));
-}
-
-#[test]
-fn parse_duration_iso8601() {
-    assert_eq!(parse_duration("P7D").unwrap(), Duration::days(7));
-    assert_eq!(parse_duration("p7d").unwrap(), Duration::days(7));
-    assert_eq!(parse_duration("PT2H").unwrap(), Duration::hours(2));
-    assert_eq!(parse_duration("PT30M").unwrap(), Duration::minutes(30));
-    assert_eq!(parse_duration("PT45S").unwrap(), Duration::seconds(45));
+fn human_compound() {
+    assert_eq!(dur("1h30m"), SignedDuration::from_mins(90));
     assert_eq!(
-        parse_duration("P1DT12H").unwrap(),
-        Duration::days(1) + Duration::hours(12)
+        dur("1d2h3m4s"),
+        SignedDuration::new(86_400 + 2 * 3_600 + 3 * 60 + 4, 0)
     );
     assert_eq!(
-        parse_duration("P1DT2H30M").unwrap(),
-        Duration::days(1) + Duration::hours(2) + Duration::minutes(30)
+        dur("7 days 6 hours 5 minutes 4 seconds"),
+        SignedDuration::new(7 * 86_400 + 6 * 3_600 + 5 * 60 + 4, 0)
     );
-    assert_eq!(
-        parse_duration("PT1H30M45S").unwrap(),
-        Duration::hours(1) + Duration::minutes(30) + Duration::seconds(45)
-    );
+    assert_eq!(dur("1h 30m"), SignedDuration::from_mins(90));
 }
 
 #[test]
-fn parse_duration_errors() {
-    assert_eq!(parse_duration("").unwrap_err(), TimeError::EmptyInput);
-    assert_eq!(parse_duration("  ").unwrap_err(), TimeError::EmptyInput);
-    assert_eq!(parse_duration("abc").unwrap_err(), TimeError::UnknownSuffix);
-    assert_eq!(parse_duration("1x").unwrap_err(), TimeError::UnknownSuffix);
-    assert_eq!(parse_duration("P").unwrap_err(), TimeError::InvalidNumber);
-    assert_eq!(parse_duration("PT").unwrap_err(), TimeError::InvalidNumber);
+fn human_fractions() {
+    assert_eq!(dur("1.5h"), SignedDuration::from_mins(90));
+    assert_eq!(dur(".5h"), SignedDuration::from_mins(30));
+    assert_eq!(dur("1.25w"), SignedDuration::from_hours(210));
+    assert_eq!(dur("0.5s"), SignedDuration::from_millis(500));
+    assert_eq!(dur("1.25d"), SignedDuration::from_hours(30));
+    assert_eq!(dur("0.1s"), SignedDuration::from_millis(100));
+    assert_eq!(dur("1.000000001s"), SignedDuration::new(1, 1));
+    // Sub-nanosecond precision is truncated.
+    assert_eq!(dur("0.0000000009s"), SignedDuration::ZERO);
+}
+
+#[test]
+fn human_sign_and_zero() {
+    assert_eq!(dur("-1h"), SignedDuration::from_hours(-1));
+    assert_eq!(dur("+2h"), SignedDuration::from_hours(2));
+    assert_eq!(dur("-1h30m"), SignedDuration::from_mins(-90));
+    assert_eq!(dur("0s"), SignedDuration::ZERO);
+    assert_eq!(dur("0.0s"), SignedDuration::ZERO);
+}
+
+#[test]
+fn human_errors() {
+    assert_eq!(parse_duration(""), Err(TimeError::EmptyInput));
+    assert_eq!(parse_duration("   "), Err(TimeError::EmptyInput));
+    assert_eq!(parse_duration("abc"), Err(TimeError::InvalidNumber));
+    assert_eq!(parse_duration("d"), Err(TimeError::InvalidNumber));
+    assert_eq!(parse_duration("7"), Err(TimeError::InvalidDuration));
+    assert_eq!(parse_duration("1."), Err(TimeError::InvalidNumber));
+    assert_eq!(parse_duration("1.5"), Err(TimeError::InvalidDuration));
+    assert_eq!(parse_duration("1h30"), Err(TimeError::InvalidDuration));
+    assert_eq!(parse_duration("1..5h"), Err(TimeError::InvalidNumber));
+    assert_eq!(parse_duration("1x"), Err(TimeError::UnknownUnit));
+    assert_eq!(parse_duration("1y"), Err(TimeError::UnsupportedUnit));
+    assert_eq!(parse_duration("1year"), Err(TimeError::UnsupportedUnit));
+    assert_eq!(parse_duration("1mo"), Err(TimeError::UnsupportedUnit));
+    assert!(parse_duration("1h-").is_err());
+}
+
+#[test]
+fn iso_basic() {
+    assert_eq!(dur("P7D"), SignedDuration::from_hours(7 * 24));
+    assert_eq!(dur("p7d"), SignedDuration::from_hours(7 * 24));
+    assert_eq!(dur("PT2H"), SignedDuration::from_hours(2));
+    assert_eq!(dur("PT30M"), SignedDuration::from_mins(30));
+    assert_eq!(dur("PT45S"), SignedDuration::from_secs(45));
+    assert_eq!(dur("P1DT12H"), SignedDuration::from_hours(36));
+    assert_eq!(
+        dur("P1DT2H30M"),
+        SignedDuration::new(86_400 + 2 * 3_600 + 30 * 60, 0)
+    );
+    assert_eq!(
+        dur("PT1H30M45S"),
+        SignedDuration::new(3_600 + 30 * 60 + 45, 0)
+    );
+    assert_eq!(dur("P1W"), SignedDuration::from_hours(7 * 24));
+    assert_eq!(dur("P2W"), SignedDuration::from_hours(14 * 24));
+    assert_eq!(parse_duration("P2W3D"), Err(TimeError::InvalidDuration));
+}
+
+#[test]
+fn iso_zero_and_fractions() {
+    assert_eq!(dur("P0D"), SignedDuration::ZERO);
+    assert_eq!(dur("PT0S"), SignedDuration::ZERO);
+    assert_eq!(dur("P0.0D"), SignedDuration::ZERO);
+    assert_eq!(dur("PT0.5S"), SignedDuration::from_millis(500));
+    assert_eq!(dur("PT1.5S"), SignedDuration::from_millis(1500));
+    assert_eq!(dur("P1.5D"), SignedDuration::from_hours(36));
+    assert_eq!(
+        dur("P1DT2.5H"),
+        SignedDuration::new(86_400 + 2 * 3_600 + 30 * 60, 0)
+    );
+    assert_eq!(parse_duration("P.5D"), Err(TimeError::InvalidNumber));
+}
+
+#[test]
+fn iso_signed() {
+    assert_eq!(dur("-P1D"), SignedDuration::from_hours(-24));
+    assert_eq!(dur("+P1D"), SignedDuration::from_hours(24));
+    assert_eq!(dur("-P1DT12H"), SignedDuration::from_hours(-36));
+    assert_eq!(parse_duration("-P1Y"), Err(TimeError::UnsupportedUnit));
+}
+
+#[test]
+fn iso_rejects_calendar_units() {
+    assert_eq!(parse_duration("P1Y"), Err(TimeError::UnsupportedUnit));
+    assert_eq!(parse_duration("P1M"), Err(TimeError::UnsupportedUnit));
+    assert_eq!(parse_duration("P1Y2M3D"), Err(TimeError::UnsupportedUnit));
+}
+
+#[test]
+fn iso_rejects_bad_structure() {
+    assert_eq!(parse_duration("P"), Err(TimeError::InvalidDuration));
+    assert_eq!(parse_duration("PT"), Err(TimeError::InvalidDuration));
+    assert_eq!(parse_duration("P1DT"), Err(TimeError::InvalidDuration));
+    assert_eq!(parse_duration("P1D2H"), Err(TimeError::InvalidDuration));
+    assert_eq!(parse_duration("PT1D"), Err(TimeError::InvalidDuration));
+    assert_eq!(parse_duration("PT1H1H"), Err(TimeError::InvalidDuration));
+    assert_eq!(parse_duration("PT1M1H"), Err(TimeError::InvalidDuration));
+    assert_eq!(parse_duration("P1D1D"), Err(TimeError::InvalidDuration));
+    assert_eq!(parse_duration("P1DT1H2H"), Err(TimeError::InvalidDuration));
+    assert_eq!(parse_duration("P1.5D2H"), Err(TimeError::InvalidDuration));
+    assert_eq!(parse_duration("PT1.5S2S"), Err(TimeError::InvalidDuration));
+    assert_eq!(parse_duration("P1W2D"), Err(TimeError::InvalidDuration));
+    assert_eq!(parse_duration("P1W1D"), Err(TimeError::InvalidDuration));
+    assert_eq!(parse_duration("P1WT1H"), Err(TimeError::InvalidDuration));
+    assert_eq!(parse_duration("P1X"), Err(TimeError::UnknownUnit));
+}
+
+#[test]
+fn duration_overflow_is_an_error_not_a_panic() {
+    assert_eq!(
+        parse_duration("200000000000000000d"),
+        Err(TimeError::Overflow)
+    );
+    assert_eq!(
+        parse_duration("P200000000000000000D"),
+        Err(TimeError::Overflow)
+    );
+    assert!(parse_duration("P999999999999999999999999999999999999999D").is_err());
+    assert!(parse_duration("999999999999999999999999999999999999999d").is_err());
+}
+
+#[test]
+fn format_round_trips() {
+    let cases = [
+        SignedDuration::ZERO,
+        SignedDuration::from_secs(1),
+        SignedDuration::from_secs(-1),
+        SignedDuration::from_mins(90),
+        SignedDuration::from_hours(7 * 24),
+        SignedDuration::new(86_400 + 2 * 3_600 + 3 * 60 + 4, 0),
+        SignedDuration::from_millis(500),
+        SignedDuration::from_millis(-1500),
+        SignedDuration::new(1, 1),
+        SignedDuration::from_hours(365 * 24),
+        SignedDuration::MAX,
+        SignedDuration::MIN,
+    ];
+    for span in cases {
+        let rendered = format_duration(span);
+        assert_eq!(
+            parse_duration(&rendered),
+            Ok(span),
+            "round trip of {rendered:?}"
+        );
+    }
+}
+
+#[test]
+fn format_is_minimal() {
+    assert_eq!(format_duration(SignedDuration::ZERO), "0s");
+    assert_eq!(format_duration(SignedDuration::from_hours(7 * 24)), "7d");
+    assert_eq!(format_duration(SignedDuration::from_mins(90)), "1h30m");
+    assert_eq!(format_duration(SignedDuration::from_millis(500)), "0.5s");
+    assert_eq!(format_duration(SignedDuration::from_millis(-1500)), "-1.5s");
+    assert_eq!(format_duration(SignedDuration::new(1, 1)), "1.000000001s");
+}
+
+#[test]
+fn iso_accepts_what_format_emits() {
+    let span = SignedDuration::new(2 * 86_400 + 3 * 3_600, 0);
+    assert_eq!(parse_duration("P2DT3H"), Ok(span));
+    assert_eq!(format_duration(span), "2d3h");
+}
+
+#[test]
+fn format_round_trips_over_a_range() {
+    for secs in (-1_000i64..=1_000).step_by(7) {
+        for nanos in [0, 1, 999_999_999] {
+            let span = SignedDuration::new(secs, nanos);
+            let rendered = format_duration(span);
+            assert_eq!(
+                parse_duration(&rendered),
+                Ok(span),
+                "secs={secs} nanos={nanos} rendered={rendered:?}"
+            );
+        }
+    }
 }

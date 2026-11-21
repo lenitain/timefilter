@@ -1,35 +1,47 @@
-//! Integration tests for serde feature.
+//! Serde tests. Run with `--features serde`.
 
 #![cfg(feature = "serde")]
 
-use chrono::{DateTime, NaiveDateTime, Utc};
+use jiff::{SignedDuration, Timestamp};
 use timefilter::{TimeFilter, TimeOp};
 
-fn make_time(s: &str) -> DateTime<Utc> {
-    let naive = NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S").unwrap();
-    DateTime::from_naive_utc_and_offset(naive, Utc)
-}
-
 #[test]
-fn serde_roundtrip_time_filter() {
-    let f = TimeFilter::ge(make_time("2024-05-01 10:00:00"));
-    let json = serde_json::to_string(&f).unwrap();
-    assert!(json.contains(">="));
+fn relative_filter_round_trips() {
+    let filter: TimeFilter = ">=7d".parse().unwrap();
+    let json = serde_json::to_string(&filter).unwrap();
+    assert_eq!(json, "\">=7d\"");
 
     let parsed: TimeFilter = serde_json::from_str(&json).unwrap();
+    assert_eq!(parsed, filter);
     assert_eq!(parsed.op(), TimeOp::Ge);
-    // Compare as strings to avoid timezone issues
-    assert_eq!(
-        parsed.time().format("%Y-%m-%d %H:%M:%S").to_string(),
-        "2024-05-01 10:00:00"
-    );
+    assert_eq!(parsed.span(), Some(SignedDuration::from_hours(7 * 24)));
 }
 
 #[test]
-fn serde_relative_time_filter() {
-    let f = TimeFilter::lt(make_time("2024-01-01 00:00:00"));
-    let json = serde_json::to_string(&f).unwrap();
+fn relative_filter_does_not_freeze_on_serialize() {
+    let filter: TimeFilter = ">=1h".parse().unwrap();
+    let first = serde_json::to_string(&filter).unwrap();
+    let second = serde_json::to_string(&filter).unwrap();
+    assert_eq!(first, second);
+    assert_eq!(first, "\">=1h\"");
+}
+
+#[test]
+fn absolute_filter_round_trips_including_nanos() {
+    let time: Timestamp = "2024-05-01T10:00:00.123456789Z".parse().unwrap();
+    let filter = TimeFilter::le(time);
+
+    let json = serde_json::to_string(&filter).unwrap();
+    assert_eq!(json, "\"<=2024-05-01T10:00:00.123456789Z\"");
 
     let parsed: TimeFilter = serde_json::from_str(&json).unwrap();
-    assert_eq!(parsed.op(), TimeOp::Lt);
+    assert_eq!(parsed, filter);
+}
+
+#[test]
+fn invalid_json_is_rejected() {
+    assert!(serde_json::from_str::<TimeFilter>("\"7d\"").is_err());
+    assert!(serde_json::from_str::<TimeFilter>("\">=1x\"").is_err());
+    assert!(serde_json::from_str::<TimeFilter>("\"=7d\"").is_err());
+    assert!(serde_json::from_str::<TimeFilter>("\">=P1W2D\"").is_err());
 }
